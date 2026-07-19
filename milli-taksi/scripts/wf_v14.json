@@ -1,0 +1,4050 @@
+{
+  "updatedAt": "2026-07-19T07:51:09.107Z",
+  "createdAt": "2026-07-17T09:30:52.993Z",
+  "id": "YKDeJegcr2Nwbulq",
+  "name": "Milli Taksi - ОФИС v14",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -256,
+        2112
+      ],
+      "id": "4be41768-cdaa-482a-bfd7-51f3a997ed84",
+      "name": "Пуш утро · 7:00"
+    },
+    {
+      "parameters": {
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=40.4093&longitude=49.8671&current=temperature_2m,weather_code&daily=temperature_2m_max&forecast_days=1&timezone=Asia%2FBaku",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        2112
+      ],
+      "id": "026282a3-902e-4378-85d2-556bd5b71561",
+      "name": "Пуш утро · погода"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.content[0].text;\nconst fs = require('fs');\nfs.writeFileSync('/home/node/.n8n/milli/pending_push.txt', text, 'utf8');\nreturn [{ json: { draftText: text, slot: 'səhər' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        2112
+      ],
+      "id": "d437f051-be61-4e10-b1de-e40ead12fc84",
+      "name": "Пуш утро · черновик"
+    },
+    {
+      "parameters": {
+        "chatId": "8309087590",
+        "text": "={{ '🌅 ЧЕРНОВИК (утро):\\n\\n' + $json.draftText + '\\n\\nƏgər hər şey yaxşıdırsa — cavab yaz: Ok' }}",
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        784,
+        2112
+      ],
+      "id": "3dfd87be-0e4d-4988-ac97-8c046d95cbdf",
+      "name": "Пуш утро · мне",
+      "webhookId": "d992060e-110c-4de9-97a0-dd6840e92ee6",
+      "credentials": {
+        "telegramApi": {
+          "id": "qbHB49SQFhw6T0QT",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://browserless:3000/function?token=milli2026browser",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "code",
+              "value": "=export default async function ({ page, context }) { const msgText = context.pendingText || 'Salam!'; const log = { errors: [] }; try { await page.goto('https://login.uptaxi.ru/', { waitUntil: 'networkidle2', timeout: 60000 }); await new Promise(r => setTimeout(r, 2500)); await page.type('input[name=firm_id]', '1165', { delay: 60 }); await page.type('input[name=login]', 'MilliBot', { delay: 60 }); await page.type('input[name=password]', 'Leylusa0618', { delay: 60 }); const captchaVisible = await page.evaluate(() => { const c = document.querySelector('input[name=code]'); if (!c) return false; const r = c.getBoundingClientRect(); return r.width > 0 && r.height > 0; }); if (captchaVisible) { return { data: JSON.stringify({ stopped: 'CAPTCHA' }), type: 'application/json' }; } await page.evaluate(() => { const cb = document.querySelector('input[name=cabinet]'); if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); } }); await new Promise(r => setTimeout(r, 500)); await page.evaluate(() => { const btn = document.querySelector('input[type=submit], button[type=submit]'); if (btn) btn.click(); }); await new Promise(r => setTimeout(r, 9000)); if (!page.url().includes('upphone.ru')) { return { data: JSON.stringify({ stopped: 'LOGIN_FAILED' }), type: 'application/json' }; } } catch(e) { log.errors.push('LOGIN'); return { data: JSON.stringify(log), type: 'application/json' }; } try { await page.goto('https://1165.upphone.ru:4422/web/cab/1165/operations/send-messages/create/', { waitUntil: 'networkidle2', timeout: 60000 }); await new Promise(r => setTimeout(r, 6000)); } catch(e) { log.errors.push('NAV'); return { data: JSON.stringify(log), type: 'application/json' }; } try { await page.evaluate(() => { const selects = document.querySelectorAll('select'); for (const sel of selects) { for (const opt of sel.options) { if (opt.text.toUpperCase().includes('PUSH')) { sel.value = opt.value; sel.dispatchEvent(new Event('change', { bubbles: true })); return true; } } } }); } catch(e) {} await new Promise(r => setTimeout(r, 4000)); let sentTo = 0; try { sentTo = await page.evaluate(() => { const jq = window.$; jq('#rows-table').jqxGrid('clearselection'); const rows = jq('#rows-table').jqxGrid('getrows'); rows.forEach(r => { jq('#rows-table').jqxGrid('selectrow', r.uid); }); return rows.length; }); } catch(e) { log.errors.push('SELECT'); } await new Promise(r => setTimeout(r, 2000)); try { await page.evaluate((txt) => { const ta = document.querySelector('textarea[data-name=message]'); if (ta) { ta.focus(); ta.value = txt; ta.dispatchEvent(new Event('input', { bubbles: true })); ta.dispatchEvent(new Event('change', { bubbles: true })); } }, msgText); } catch(e) { log.errors.push('FILL'); } await new Promise(r => setTimeout(r, 1000)); try { const sendBtn = await page.$('#send-message'); if (sendBtn) { await page.evaluate(e => e.click(), sendBtn); } } catch(e) { log.errors.push('SEND'); } await new Promise(r => setTimeout(r, 4000)); return { data: JSON.stringify({ success: true, sentTo: sentTo, errors: log.errors }), type: 'application/json' }; }"
+            },
+            {
+              "name": "context",
+              "value": "={{ { pendingText: $json.safeText } }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        528,
+        1632
+      ],
+      "id": "583aac14-dc43-4d8d-96fc-cfd018c1b348",
+      "name": "Мозг · рассылка всем"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\ntry { fs.unlinkSync('/home/node/.n8n/milli/pending_push.txt'); } catch(e) {}\nreturn [{ json: { cleared: true } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        1632
+      ],
+      "id": "1b99e68c-990e-4f5c-9845-1a0e5b7485db",
+      "name": "Мозг · очистить черновик"
+    },
+    {
+      "parameters": {
+        "chatId": "8309087590",
+        "text": "={{ '✅ Göndərildi! Sürücülərə çatdı.' }}",
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1040,
+        1632
+      ],
+      "id": "82945126-e8fa-4739-975b-9442a6785ec0",
+      "name": "Мозг · готово",
+      "webhookId": "8e89b1e3-12d8-41d0-8234-5cc4436815fa",
+      "credentials": {
+        "telegramApi": {
+          "id": "qbHB49SQFhw6T0QT",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 13
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -256,
+        2304
+      ],
+      "id": "8d7eed7e-d232-43c0-9e11-eac82824e602",
+      "name": "Пуш обед · 13:00"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.content[0].text;\nconst fs = require('fs');\nfs.writeFileSync('/home/node/.n8n/milli/pending_push.txt', text, 'utf8');\nreturn [{ json: { draftText: text, slot: 'nahar' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        2304
+      ],
+      "id": "8433d169-7441-404a-aa21-d8fa9a283549",
+      "name": "Пуш обед · черновик"
+    },
+    {
+      "parameters": {
+        "chatId": "8309087590",
+        "text": "={{ '🍽️ ЧЕРНОВИК (обед):\\n\\n' + $json.draftText + '\\n\\nƏgər hər şey yaxşıdırsa — cavab yaz: Ok' }}",
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        784,
+        2304
+      ],
+      "id": "11dd6431-220f-4c65-8bdb-d2fb13079490",
+      "name": "Пуш обед · мне",
+      "webhookId": "46adfa1e-cc04-4d6d-beb6-b8b4cc28a9f9",
+      "credentials": {
+        "telegramApi": {
+          "id": "qbHB49SQFhw6T0QT",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.pendingText;\n\n// 1. Пустой черновик — не рассылаем ничего\nif (!raw || typeof raw !== 'string' || !raw.trim()) {\n  throw new Error('STOP: черновик пустой. Рассылка отменена.');\n}\n\nconst safe = raw.replace(/\\r\\n/g, '\\n').trim();\n\n// 2. Кириллица = мусор. Водителям пишем только на азербайджанском.\nif (/[А-Яа-яЁё]/.test(safe)) {\n  const found = (safe.match(/[А-Яа-яЁё]+/g) || []).slice(0, 5).join(' ');\n  throw new Error('STOP: в черновике кириллица (\"' + found + '\"). Рассылка отменена.');\n}\n\n// 3. Служебный мусор: арифметика вида \"22 % 12 = 10\", годы 20xx\nif (/\\d+\\s*%\\s*\\d+\\s*=\\s*\\d+/.test(safe)) {\n  throw new Error('STOP: в черновике арифметика. Рассылка отменена.');\n}\n\n// 4. Подозрительно короткий текст\nif (safe.length < 15) {\n  throw new Error('STOP: черновик слишком короткий (' + safe.length + ' симв.). Рассылка отменена.');\n}\n\n// 5. Подозрительно длинный (шаблон + погода ~ 200 симв.)\nif (safe.length > 400) {\n  throw new Error('STOP: черновик слишком длинный (' + safe.length + ' симв.). Рассылка отменена.');\n}\n\nreturn [{ json: { safeText: safe } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        1632
+      ],
+      "id": "51766f8f-4753-4d83-8583-0e86a9f10fe9",
+      "name": "Мозг · очистка текста"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 17
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -256,
+        2512
+      ],
+      "id": "d2142ed9-6560-4074-b492-df2e4aede973",
+      "name": "Пуш вечер · 17:00"
+    },
+    {
+      "parameters": {
+        "chatId": "8309087590",
+        "text": "={{ '🌆 ЧЕРНОВИК (вечер):\\n\\n' + $json.draftText + '\\n\\nƏgər hər şey yaxşıdırsa — cavab yaz: ok' }}",
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        528,
+        2512
+      ],
+      "id": "4bf2c8c3-5fa0-48e2-8026-fb2addeedaa3",
+      "name": "Пуш вечер · мне",
+      "webhookId": "ea4d04cc-636b-487c-867b-46bc426a25a6",
+      "credentials": {
+        "telegramApi": {
+          "id": "qbHB49SQFhw6T0QT",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.content[0].text;\nconst fs = require('fs');\nfs.writeFileSync('/home/node/.n8n/milli/pending_push.txt', text, 'utf8');\nreturn [{ json: { draftText: text, slot: 'axsam' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        2512
+      ],
+      "id": "5cad5eb3-9802-4026-8464-c1d32b62adbe",
+      "name": "Пуш вечер · черновик"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Реальные данные из узла погоды\nconst j = $input.first().json || {};\nconst cur = j.current || {};\nconst day = j.daily || {};\nlet T = null, TMAX = null;\nconst t = Number(cur.temperature_2m);\nif (isFinite(t) && t > -40 && t < 60) T = Math.round(t);\nconst arr = day.temperature_2m_max;\nif (Array.isArray(arr) && isFinite(Number(arr[0]))) {\n  const m = Math.round(Number(arr[0]));\n  if (m > -40 && m < 60) TMAX = m;\n}\nif (T !== null && TMAX !== null && TMAX < T) TMAX = T;\nconst HOT = TMAX !== null && TMAX >= 30;\n\nfunction pick(list) {\n  const ok = list.filter(function (x) {\n    if (x.needT && T === null) return false;\n    if (x.needMax && TMAX === null) return false;\n    if (x.hotOnly && !HOT) return false;\n    return true;\n  });\n  const nowBaku = new Date(Date.now() + 4 * 3600 * 1000);\n  const start = Date.UTC(nowBaku.getUTCFullYear(), 0, 0);\n  const doy = Math.floor((nowBaku.getTime() - start) / 86400000);\n  const chosen = ok[doy % ok.length];\n  return chosen.t.replace(/\\{T\\}/g, String(T)).replace(/\\{TMAX\\}/g, String(TMAX));\n}\n\nconst text = pick([\n { t:\"Axşamınız xeyir!\\n🌆 Şəhərdə hərəkət artır, bir çox insan evə tələsir. Bu saatlar adətən günün ən aktiv sifariş vaxtlarından biridir.\\n🚖 Təhlükəsiz sürüş və bol sifarişlər arzulayırıq!\" },\n { t:\"Axşamınız xeyir!\\n✨ Gün hələ bitməyib. Qarşıda yeni sifarişlər və əlavə qazanc üçün yaxşı fürsətlər var.\\n🚖 Uğurlu axşam və bol qazanc arzulayırıq!\" },\n { t:\"Axşamınız xeyir!\\n💧 Uzun iş günündən sonra özünüzə də diqqət ayırmağı unutmayın. İmkan olduqca dincəlin, su için və ehtiyac hiss edirsinizsə, qısa fasilə verin.\\n🚖 Təhlükəsiz yollar və uğurlu sifarişlər arzulayırıq!\" },\n { t:\"Axşamınız xeyir!\\n🙏 Bu gün sərnişinlərə göstərdiyiniz xidmət və əməyiniz üçün təşəkkür edirik.\\nHər uğurlu səfər Milli Taksi-yə olan etibarı daha da gücləndirir.\\n🚖 Sizə sakit, təhlükəsiz və bərəkətli axşam arzulayırıq!\" },\n { t:\"Axşamınız xeyir!\\nBəzən günün ən yaxşı sifarişləri məhz axşam saatlarında gəlir.\\n🌟 Günü uğurla tamamlamaq üçün qarşıda hələ gözəl imkanlar var.\\n🚖 Təhlükəsiz sürün, bol qazanın və evinizə xoş əhval-ruhiyyə ilə qayıdın!\" }\n]);\n\nif (/[а-яА-ЯёЁ]/.test(text)) {\n  text = \"🚖 Sabahınız xeyir! Yolunuz açıq, qazancınız bol olsun. Uğurlar!\";\n}\nreturn [{ json: { content: [{ type: \"text\", text: text }] } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        2512
+      ],
+      "id": "1611cb5a-bc23-442c-9df7-a9ec4fa95bcd",
+      "name": "Пуш вечер · шаблон"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Реальные данные из узла погоды\nconst j = $input.first().json || {};\nconst cur = j.current || {};\nconst day = j.daily || {};\nlet T = null, TMAX = null;\nconst t = Number(cur.temperature_2m);\nif (isFinite(t) && t > -40 && t < 60) T = Math.round(t);\nconst arr = day.temperature_2m_max;\nif (Array.isArray(arr) && isFinite(Number(arr[0]))) {\n  const m = Math.round(Number(arr[0]));\n  if (m > -40 && m < 60) TMAX = m;\n}\nif (T !== null && TMAX !== null && TMAX < T) TMAX = T;\nconst HOT = TMAX !== null && TMAX >= 30;\n\nfunction pick(list) {\n  const ok = list.filter(function (x) {\n    if (x.needT && T === null) return false;\n    if (x.needMax && TMAX === null) return false;\n    if (x.hotOnly && !HOT) return false;\n    return true;\n  });\n  const nowBaku = new Date(Date.now() + 4 * 3600 * 1000);\n  const start = Date.UTC(nowBaku.getUTCFullYear(), 0, 0);\n  const doy = Math.floor((nowBaku.getTime() - start) / 86400000);\n  const chosen = ok[doy % ok.length];\n  return chosen.t.replace(/\\{T\\}/g, String(T)).replace(/\\{TMAX\\}/g, String(TMAX));\n}\n\nconst text = pick([\n { t:\"Hər qəbul etdiyiniz sifariş sərnişinlərin Milli Taksi-yə olan etibarını artırır. Birlikdə daha güclü xidmət yaradırıq.\\n🚖 Hər kəsə uğurlu iş günü və bol qazanc arzulayırıq!\" },\n { t:\"Bir çox sərnişin məhz bu saatlarda taksi sifariş edir. Onlayn olan sürücülər isə daha çox sifariş qəbul edir.\\n🚖 Fürsəti qaçırmayın. Uğurlu və bol qazanc arzulayırıq!\" },\n { hotOnly:1, needT:1, t:\"🌡️ Hazırda Bakıda hava {T}°C-dir, isti olaraq qalır. Özünüzü də unutmayın — imkan olduqca su için, qısa fasilələr edin və avtomobildə sərinliyi qoruyun.\\n🚖 Rahat iş günü və bol sifarişlər arzulayırıq!\" },\n { t:\"Günün ən aktiv saatları davam edir. Hələ də onlayn deyilsinizsə, indi qoşulmaq üçün əla vaxtdır.\\n🚖 Sifarişlər sizi gözləyir. Uğurlu və bol qazanc arzulayırıq!\" }\n]);\n\nif (/[а-яА-ЯёЁ]/.test(text)) {\n  text = \"🚖 Sabahınız xeyir! Yolunuz açıq, qazancınız bol olsun. Uğurlar!\";\n}\nreturn [{ json: { content: [{ type: \"text\", text: text }] } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        2304
+      ],
+      "id": "21b37026-db1e-4052-90f8-708df26b101c",
+      "name": "Пуш обед · шаблон"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Реальные данные из узла погоды\nconst j = $input.first().json || {};\nconst cur = j.current || {};\nconst day = j.daily || {};\nlet T = null, TMAX = null;\nconst t = Number(cur.temperature_2m);\nif (isFinite(t) && t > -40 && t < 60) T = Math.round(t);\nconst arr = day.temperature_2m_max;\nif (Array.isArray(arr) && isFinite(Number(arr[0]))) {\n  const m = Math.round(Number(arr[0]));\n  if (m > -40 && m < 60) TMAX = m;\n}\nif (T !== null && TMAX !== null && TMAX < T) TMAX = T;\nconst HOT = TMAX !== null && TMAX >= 30;\n\nfunction pick(list) {\n  const ok = list.filter(function (x) {\n    if (x.needT && T === null) return false;\n    if (x.needMax && TMAX === null) return false;\n    if (x.hotOnly && !HOT) return false;\n    return true;\n  });\n  const nowBaku = new Date(Date.now() + 4 * 3600 * 1000);\n  const start = Date.UTC(nowBaku.getUTCFullYear(), 0, 0);\n  const doy = Math.floor((nowBaku.getTime() - start) / 86400000);\n  const chosen = ok[doy % ok.length];\n  return chosen.t.replace(/\\{T\\}/g, String(T)).replace(/\\{TMAX\\}/g, String(TMAX));\n}\n\nconst text = pick([\n { needT:1, needMax:1, hotOnly:1, t:\"Sabahınız xeyir, gününüz uğurlu olsun!\\n🌤️ Hazırda Bakıda hava {T}°C-dir. Gün ərzində temperaturun {TMAX}°C-yə qədər yüksəlməsi gözlənilir.\\n❄️ Kondisionerinizi əvvəlcədən işə salın, avtomobildə sərin su saxlayın və günü xoş əhval-ruhiyyə ilə başlayın.\\n🚖 Sizə təhlükəsiz yol, bol sifariş və uğurlu qazanc arzulayırıq!\" },\n { hotOnly:1, t:\"Sabahınız xeyir, gününüz uğurlu olsun!\\n☀️ İsti hava artıq özünü göstərir. Öz rahatlığınızı düşünün: avtomobili sərin saxlayın, suyunuzu yanınızdan əskik etməyin və özünüzə diqqət ayırın.\\n😊 Yaxşı əhval isə sərnişinlərə də ötürülür.\\n🚖 Uğurlu və bərəkətli gün arzulayırıq!\" },\n { t:\"Sabahınız xeyir, gününüz uğurlu olsun!\\nHər yeni gün yeni imkan deməkdir.\\n✨ Bir təbəssüm, səliqəli avtomobil və nəzakətli münasibət gününüzü daha uğurlu edə bilər.\\n🚖 Bu gün sizə bol sifariş və yüksək əhval arzulayırıq!\" },\n { needMax:1, hotOnly:1, t:\"Sabahınız xeyir, gününüz uğurlu olsun!\\n🌡️ Bu gün Bakıda temperatur {TMAX}°C-yə qədər yüksələ bilər.\\n❄️ Sərin salon, təmiz avtomobil və gülərüz xidmət həm sizin, həm də sərnişinləriniz üçün rahat səyahət deməkdir.\\n🚖 Gözəl gün və bol qazanc arzulayırıq!\" },\n { needT:1, needMax:1, t:\"Sabahınız xeyir, gününüz uğurlu olsun!\\n🌤️ Hazırda Bakıda hava {T}°C-dir, gün ərzində {TMAX}°C-yə qədər qalxacaq.\\n😊 Səliqəli avtomobil və gülərüz münasibət gününüzü daha uğurlu edə bilər.\\n🚖 Uğurlu, məhsuldar və bol qazanclı gün arzulayırıq!\" },\n { t:\"Sabahınız xeyir, gününüz uğurlu olsun!\\nHər sifariş yeni bir yol, hər yol isə yeni bir fürsətdir.\\n☀️ Günə inamla başlayın, təhlükəsiz sürün və hər kilometrdən zövq alın.\\n🚖 Uğurlu, məhsuldar və bol qazanclı gün arzulayırıq!\" }\n]);\n\nif (/[а-яА-ЯёЁ]/.test(text)) {\n  text = \"🚖 Sabahınız xeyir! Yolunuz açıq, qazancınız bol olsun. Uğurlar!\";\n}\nreturn [{ json: { content: [{ type: \"text\", text: text }] } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        2112
+      ],
+      "id": "86ea2ebe-75c6-4645-932e-b98d8c1ed646",
+      "name": "Пуш утро · шаблон"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst file = '/home/node/.n8n/milli/driver_positions.json';\nlet store;\ntry {\n  store = JSON.parse(fs.readFileSync(file, 'utf8'));\n} catch (e) {\n  return [{ json: { positions: [], updated: null, error: 'no positions file: ' + String(e) } }];\n}\nreturn [{ json: {\n  positions: store.drivers || [],\n  updated: store.updated || null\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1312
+      ],
+      "id": "c7e1d226-39d3-4a00-a210-175793606d2a",
+      "name": "Вербовщик · позиции"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://browserless:3000/function?token=milli2026browser",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ code: `\nexport default async function ({ page, context }) {\n  const log = { steps: [], ok: false, sent: [], errors: [] };\n  const positions = context.positions || [];\n  const posAgeMin = context.updated ? Math.round((Date.now() - new Date(context.updated).getTime())/60000) : -1;\n  const TEST_CHAT_ID = 5;\n  const COMMISSION = 0.10, R1 = 4, R2 = 5, TOP_N = 5;\n\n  function distKm(la1,ln1,la2,ln2){\n    const R=6371,dLa=(la2-la1)*Math.PI/180,dLn=(ln2-ln1)*Math.PI/180;\n    const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLn/2)**2;\n    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));\n  }\n  function firstName(f){ if(!f) return 'sürücü'; const w=String(f).trim().split(/\\\\s+/)[0]; return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase(); }\n  function sDA(w){ const b='aıou',v=(String(w).toLowerCase().match(/[aıoueəiöü]/g))||[],l=v.length?v[v.length-1]:'a'; return b.includes(l)?'da':'də'; }\n  function sDAN(w){ return sDA(w)==='da'?'dan':'dən'; }\n  function sA(w){ const b='aıou',v=(String(w).toLowerCase().match(/[aıoueəiöü]/g))||[],l=v.length?v[v.length-1]:'a'; return b.includes(l)?'a':'ə'; }\n\n  try {\n    await page.setCookie({ name:'cabinetUpTaxi', value: context.cookie, domain:'1165.upphone.ru', path:'/', httpOnly:false, secure:false });\n\n    await page.goto('https://1165.upphone.ru:4422/web/cab/1165/monitoring/orders', { waitUntil:'networkidle2', timeout:60000 });\n    if (page.url().includes('login.uptaxi.ru')) { log.reason='COOKIE DEAD'; return { data: JSON.stringify(log), type:'application/json' }; }\n\n    await new Promise(r=>setTimeout(r,4000));\n\n    // Берём первый горящий заказ без назначенного водителя\n    const order = await page.evaluate(() => {\n      try {\n        const rows = window.$('#orders-table').jqxGrid('getrows');\n        if (!rows || !rows.length) return null;\n        const burning = rows.filter(r => String(r.status).toLowerCase().includes('burn') && (!r.pozivnoi || r.pozivnoi===''));\n        const pick = burning.length ? burning[0] : rows[0];\n        const flat = {};\n        for (const k of Object.keys(pick)) { const v=pick[k]; if(v===null||['string','number','boolean'].includes(typeof v)) flat[k]=v; }\n        return flat;\n      } catch(e){ return { err:String(e) }; }\n    });\n\n    if (!order) { log.ok=true; log.verdict='Доска пуста — заказов нет сейчас'; return { data: JSON.stringify(log), type:'application/json' }; }\n    log.orderRaw = order;\n\n    // Пытаемся вытащить координаты подачи из разных возможных полей\n    let oLat=null, oLng=null;\n    const latKeys=['lat','from_lat','otkuda_lat','lat_a','latitude'];\n    const lngKeys=['lng','lon','from_lng','otkuda_lng','lng_a','longitude'];\n    for (const k of latKeys){ if(order[k]!=null && !isNaN(parseFloat(order[k]))){ oLat=parseFloat(order[k]); break; } }\n    for (const k of lngKeys){ if(order[k]!=null && !isNaN(parseFloat(order[k]))){ oLng=parseFloat(order[k]); break; } }\n    log.coordsSource = (oLat!=null&&oLng!=null) ? 'из полей заказа' : 'координат в заказе НЕТ';\n\n    if (oLat==null || oLng==null) {\n      // координат нет — показываем поля заказа, чтобы понять, где точка. Не шлём.\n      log.ok=true;\n      log.verdict='Заказ найден, но координат подачи нет в полях. Смотри orderRaw — определим, откуда брать точку. Ничего не отправлено.';\n      return { data: JSON.stringify(log), type:'application/json' };\n    }\n\n    // считаем топ-5\n    const zone = order.otkuda || order.zona || order.tarif || 'sifariş';\n    const to = order.kuda || '';\n    const price = parseFloat(order.price || order.summa || 0) || 0;\n    const net = (price*(1-COMMISSION)).toFixed(2);\n\n    const withDist = positions\n      .filter(d=>typeof d.lat==='number'&&typeof d.lng==='number')\n      .map(d=>({ id:d.id, pozivnoi:d.pozivnoi, name:d.name, km:Math.round(distKm(oLat,oLng,d.lat,d.lng)*100)/100 }))\n      .sort((a,b)=>a.km-b.km);\n    let picked = withDist.filter(d=>d.km<=R1).slice(0,TOP_N);\n    if (picked.length<TOP_N) picked = withDist.filter(d=>d.km<=R2).slice(0,TOP_N);\n    log.picked = picked;\n\n    if (!picked.length) { log.ok=true; log.verdict='Заказ есть, но рядом (5км) никого. Позиции '+posAgeMin+' мин.'; return { data: JSON.stringify(log), type:'application/json' }; }\n\n    // строим сообщения (в тесте все → id5, с пометкой кому)\n    const zTxt = String(zone);\n    const messages = picked.map(d=>{\n      const nm=firstName(d.name);\n      const body = nm+' bəy salam. '+zTxt+sDA(zTxt)+' bir sifariş var, qəbul edərsiniz? '+\n        (to?(String(zone)+sDAN(zTxt)+' '+String(to)+sA(String(to))+' gedəcək, '):'')+\n        'qiyməti '+price+' manatdı. Komissiyanı çıxanda '+net+' edir. '+\n        'Yaxında sürücü olmadığı üçün sizə yazdım, ən yaxın sürücü sizsiniz.';\n      return { poz:d.pozivnoi, text:'[TEST → '+d.pozivnoi+' | '+d.km+'km] '+body };\n    });\n\n    // отправляем в чат id5\n    await page.goto('https://1165.upphone.ru:4422/web/cab/1165/directory/drivers/id/'+TEST_CHAT_ID+'/chat', { waitUntil:'networkidle2', timeout:60000 });\n    await page.waitForSelector('input[name=message]', { timeout:15000 });\n    for (const m of messages) {\n      try {\n        await page.click('input[name=message]', { clickCount:3 });\n        await page.type('input[name=message]', m.text, { delay:20 });\n        await page.click('button#send-chat-message');\n        await new Promise(r=>setTimeout(r,1500));\n        log.sent.push(m.poz);\n      } catch(e){ log.errors.push(m.poz+':'+String(e).slice(0,40)); }\n    }\n\n    log.ok=true;\n    log.verdict='Заказ '+zone+(to?(' → '+to):'')+' '+price+'₼. Рядом '+picked.length+', отправлено в id5: '+log.sent.length+'. Позиции '+posAgeMin+'мин';\n    return { data: JSON.stringify(log), type:'application/json' };\n\n  } catch (e) {\n    log.error = String(e);\n    return { data: JSON.stringify(log), type:'application/json' };\n  }\n}\n`, context: { cookie: $json.cookie, positions: $json.positions, updated: $json.updated } }) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        528,
+        1312
+      ],
+      "id": "d818945e-0b7a-4ea0-9cda-81ca4e52f23e",
+      "name": "Вербовщик · отправка (ТЕСТ id5)"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 3
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -256,
+        1312
+      ],
+      "id": "e84733f9-7658-4815-b893-2004024866eb",
+      "name": "Вербовщик · 3 мин"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst DIR = '/home/node/.n8n/milli';\nconst SENT = DIR + '/sifaris_sent_orders.json';\n\nlet sent = [];\ntry {\n  if (fs.existsSync(SENT)) {\n    const arr = JSON.parse(fs.readFileSync(SENT, 'utf8'));\n    if (Array.isArray(arr)) sent = arr;\n  }\n} catch (e) {}\n\nconst dayAgo = Date.now() - 24 * 60 * 60 * 1000;\nsent = sent.filter(x => x && x.ts && x.ts > dayAgo);\n\nreturn [{\n  json: {\n    skipIds: sent.map(x => x.id),\n    sentTodayCount: sent.length\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        800
+      ],
+      "id": "099708c8-0379-484e-ac0c-b179541bc944",
+      "name": "Sifariş · память"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst DIR = '/home/node/.n8n/milli';\nconst SENT = DIR + '/sifaris_sent_orders.json';\n\nlet raw = $input.first().json;\nlet payload = {};\ntry {\n  payload = typeof raw.data === 'string' ? JSON.parse(raw.data) : (raw.data || raw);\n} catch (e) {\n  payload = {};\n}\n\nconst pushed = Array.isArray(payload.pushed) ? payload.pushed : [];\n\nif (pushed.length) {\n  let sent = [];\n  try {\n    if (fs.existsSync(SENT)) {\n      const arr = JSON.parse(fs.readFileSync(SENT, 'utf8'));\n      if (Array.isArray(arr)) sent = arr;\n    }\n  } catch (e) {}\n\n  const dayAgo = Date.now() - 24 * 60 * 60 * 1000;\n  sent = sent.filter(x => x && x.ts && x.ts > dayAgo);\n\n  pushed.forEach(p => sent.push({ id: p.id, ts: Date.now(), zone: p.zone, price: p.price }));\n\n  try {\n    if (!fs.existsSync(DIR)) fs.mkdirSync(DIR, { recursive: true });\n    fs.writeFileSync(SENT, JSON.stringify(sent), 'utf8');\n  } catch (e) {}\n}\n\nreturn [{\n  json: {\n    pushCount: pushed.length,\n    pushed: pushed,\n    ordersSeen: (payload.seen || []).length,\n    cycles: payload.cycles,\n    errors: payload.errors || []\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        800
+      ],
+      "id": "040cffb3-9d45-4b8b-b99d-c792a5b2ccaf",
+      "name": "Sifariş · отметка"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/3 8-20 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -256,
+        800
+      ],
+      "id": "6df84703-a532-4ca6-810b-cfaa2819e7b6",
+      "name": "Sifariş · 3 мин 8-20"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://browserless:3000/function?token=milli2026browser",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ code: \"export default async function ({ page, context }) { const out = { cycles: 0, seen: [], found: [], pushed: [], errors: [] }; const ck = context.cookie; const skip = {}; (context.skipIds || []).forEach(id => { skip[String(id)] = true; }); const MIN_AGE = 10; const CYCLES = 16; const STEP = 8000; const MIN_OK = 2400; const MAX_OK = 3600; function ageSec(t) { const m = String(t || '').match(/(\\\\d+):(\\\\d+):(\\\\d+)/); if (!m) return 0; return Number(m[1])*3600 + Number(m[2])*60 + Number(m[3]); } function cleanAddr(s) { s = String(s || '').trim(); if (/^координаты|^\\\\(?\\\\d{1,3}\\\\.\\\\d{3}/.test(s)) return 'Bakı'; const part = s.split(',')[0].trim(); return part || 'Bakı'; } try { await page.setCookie({ name: 'cabinetUpTaxi', value: ck, domain: '1165.upphone.ru', path: '/', httpOnly: false, secure: false }); } catch (e) { out.errors.push('SETCOOKIE: ' + e.message); } let board; try { board = page; await board.goto('https://1165.upphone.ru:4422/web/cab/1165/monitoring/orders', { waitUntil: 'networkidle2', timeout: 60000 }); await new Promise(r => setTimeout(r, 3500)); if (board.url().indexOf('login.uptaxi.ru') >= 0) { out.errors.push('COOKIE_EXPIRED'); return { data: JSON.stringify(out), type: 'application/json' }; } } catch (e) { out.errors.push('NAV: ' + e.message); return { data: JSON.stringify(out), type: 'application/json' }; } let form = null; try { form = await page.browser().newPage(); await form.setCookie({ name: 'cabinetUpTaxi', value: ck, domain: '1165.upphone.ru', path: '/', httpOnly: false, secure: false }); await form.goto('https://1165.upphone.ru:4422/web/cab/1165/operations/send-messages/create/', { waitUntil: 'networkidle2', timeout: 45000 }); await new Promise(r => setTimeout(r, 3500)); await form.evaluate(() => { const sels = document.querySelectorAll('select'); for (const s of sels) { for (const o of s.options) { if ((o.text || '').toUpperCase().indexOf('PUSH') >= 0) { s.value = o.value; s.dispatchEvent(new Event('change', { bubbles: true })); return; } } } }); await new Promise(r => setTimeout(r, 5000)); } catch (e) { out.errors.push('FORM_INIT: ' + e.message); } async function sendPush(o) { const zone = cleanAddr(o.otkuda); const text = '🚖 ' + zone + ' · ' + o.price + ' ₼'; const rec = { id: o.id, age: ageSec(o.time), zone: zone, price: o.price, text: text }; if (!form) { out.errors.push('NO_FORM_' + o.id); return; } try { const sel = await form.evaluate(() => { const jq = window.$; jq('#rows-table').jqxGrid('clearselection'); const rr = jq('#rows-table').jqxGrid('getrows') || []; let n = 0; rr.forEach(r => { const tok = !!(r.token_firebase && String(r.token_firebase).length > 20); if (tok) { jq('#rows-table').jqxGrid('selectrow', r.uid); n++; } }); const s = jq('#rows-table').jqxGrid('getselectedrowindexes') || []; return { selected: s.length }; }); if (sel.selected < MIN_OK || sel.selected > MAX_OK) { out.errors.push('ABORT_' + o.id + '_selected' + sel.selected); return; } await form.evaluate((txt) => { const ta = document.querySelector('textarea[data-name=message]'); if (ta) { ta.focus(); ta.value = txt; ta.dispatchEvent(new Event('input', { bubbles: true })); ta.dispatchEvent(new Event('change', { bubbles: true })); } }, text); await new Promise(r => setTimeout(r, 400)); const re = await form.evaluate(() => { const jq = window.$; return (jq('#rows-table').jqxGrid('getselectedrowindexes') || []).length; }); if (re < MIN_OK || re > MAX_OK) { out.errors.push('RECHECK_' + o.id + '_' + re); return; } await form.evaluate(() => { const b = document.querySelector('#send-message'); if (b) b.click(); }); rec.recipients = re; out.pushed.push(rec); await new Promise(r => setTimeout(r, 1800)); } catch (e) { out.errors.push('PUSH_' + o.id + ': ' + e.message); } } const doneThisRun = {}; for (let i = 0; i < CYCLES; i++) { out.cycles++; const cs = Date.now(); let rows = []; try { rows = await board.evaluate(() => { const jq = window.$; let r = []; try { r = jq('#orders-table').jqxGrid('getrows') || []; } catch (e) { return []; } return r.map(x => ({ id: x.id, status: x.status, pozivnoi: x.pozivnoi, time: x.time, price: x.price, otkuda: String(x.otkuda || '').slice(0, 60) })); }); } catch (e) { out.errors.push('READ' + i + ': ' + e.message); } rows.forEach(r => out.seen.push({ cycle: i, id: r.id, status: r.status, pozivnoi: r.pozivnoi, time: r.time })); const hot = rows.filter(r => String(r.status) === 'burning' && !r.pozivnoi && ageSec(r.time) >= MIN_AGE && !skip[String(r.id)] && !doneThisRun[String(r.id)]); for (const o of hot) { doneThisRun[String(o.id)] = true; out.found.push({ id: o.id, age: ageSec(o.time) }); await sendPush(o); } const el = Date.now() - cs; const w = STEP - el; if (i < CYCLES - 1 && w > 0) await new Promise(r => setTimeout(r, w)); } try { if (form) await form.close(); } catch (e) {} return { data: JSON.stringify(out), type: 'application/json' }; }\", context: { cookie: $json.cookie, skipIds: $json.skipIds } }) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        528,
+        800
+      ],
+      "id": "841f8d0c-1b3f-422b-a6c3-74f2d2ef2ea1",
+      "name": "Sifariş · пуш"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://browserless:3000/function?token=milli2026browser",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ code: `\nexport default async function ({ page, context }) {\n  const log = { steps: [], ok: false, positions: [], nullCount: 0 };\n  const t0 = Date.now();\n  try {\n    await page.setCookie({\n      name: 'cabinetUpTaxi',\n      value: context.cookie,\n      domain: '1165.upphone.ru',\n      path: '/',\n      httpOnly: false,\n      secure: false\n    });\n\n    await page.goto('https://1165.upphone.ru:4422/web/cab/1165/operations/send-messages/create/', { waitUntil: 'networkidle2', timeout: 60000 });\n    if (page.url().includes('login.uptaxi.ru')) {\n      log.reason = 'COOKIE DEAD';\n      return { data: JSON.stringify(log), type: 'application/json' };\n    }\n    await new Promise(r => setTimeout(r, 5000));\n\n    const online = await page.evaluate(() => {\n      try {\n        const rows = window.$('#rows-table').jqxGrid('getrows');\n        return rows\n          .filter(r => r.online == 1 || r.online === true || r.online === '1')\n          .map(r => ({ id: r.id, pozivnoi: r.pozivnoi, name: ((r.i||'') + ' ' + (r.f||'')).trim(), phone: r.phone_number }));\n      } catch (e) { return []; }\n    });\n    log.steps.push('online total = ' + online.length);\n\n    for (const d of online) {\n      const ts = Date.now();\n      try {\n        await page.goto('https://1165.upphone.ru:4422/web/cab/1165/directory/drivers/id/' + d.id + '/track', { waitUntil: 'domcontentloaded', timeout: 20000 });\n        let pos = null;\n        for (let i = 0; i < 5; i++) {\n          pos = await page.evaluate(() => {\n            if (typeof window.coords !== 'undefined' && Array.isArray(window.coords) && window.coords.length) {\n              const last = window.coords[window.coords.length - 1];\n              return { last: last, count: window.coords.length };\n            }\n            return null;\n          });\n          if (pos) break;\n          await new Promise(r => setTimeout(r, 500));\n        }\n        if (pos && pos.last) {\n          log.positions.push({\n            id: d.id, pozivnoi: d.pozivnoi, name: d.name, phone: d.phone,\n            lat: parseFloat(pos.last[0]), lng: parseFloat(pos.last[1]),\n            points: pos.count, ms: Date.now() - ts\n          });\n        } else {\n          log.nullCount++;\n        }\n      } catch (e) {\n        log.nullCount++;\n      }\n      if (Date.now() - t0 > 165000) { log.steps.push('TIME GUARD hit, stopped early'); break; }\n    }\n\n    log.totalMs = Date.now() - t0;\n    log.gotPositions = log.positions.length;\n    log.ok = true;\n    log.verdict = 'Позиций: ' + log.positions.length + ', null: ' + log.nullCount + ', время: ' + Math.round(log.totalMs/1000) + 'сек';\n    return { data: JSON.stringify(log), type: 'application/json' };\n\n  } catch (e) {\n    log.error = String(e);\n    return { data: JSON.stringify(log), type: 'application/json' };\n  }\n}\n`, context: { cookie: $json.cookie } }) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        272,
+        1056
+      ],
+      "id": "d2091a09-dc4d-4a01-a2cd-873a86258774",
+      "name": "Сканер · сбор"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst dir = '/home/node/.n8n/milli';\n\nlet payload;\ntry {\n  const raw = $input.first().json.data;\n  payload = typeof raw === 'string' ? JSON.parse(raw) : raw;\n} catch (e) {\n  return [{ json: { error: 'cannot parse HTTP output: ' + String(e) } }];\n}\n\nconst positions = Array.isArray(payload.positions) ? payload.positions : [];\nconst clean = positions.filter(p => p.id !== 5 && p.id !== '5');\n\ntry { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}\n\nconst out = { updated: new Date().toISOString(), count: clean.length, drivers: clean };\nconst file = dir + '/driver_positions.json';\ntry {\n  fs.writeFileSync(file, JSON.stringify(out));\n} catch (e) {\n  return [{ json: { error: 'cannot write file: ' + String(e) } }];\n}\n\nreturn [{ json: {\n  ok: true,\n  wrote: clean.length + ' drivers',\n  updated: out.updated,\n  nullFromScan: payload.nullCount,\n  scanTimeSec: Math.round((payload.totalMs||0)/1000)\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        1056
+      ],
+      "id": "4fc04319-72ef-46c7-90dc-e3d6088c8213",
+      "name": "Сканер · запись"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -256,
+        1056
+      ],
+      "id": "3fc20f3b-87e7-4ff8-b4db-202c2f03b98e",
+      "name": "Сканер · 5 мин"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst dir = '/home/node/.n8n/milli';\nconst file = dir + '/pulse.json';\n\nlet raw = $input.first().json;\nlet payload = raw;\nif (typeof raw.data === 'string') {\n  try { payload = JSON.parse(raw.data); } catch (e) { payload = { parseErr: true, raw: String(raw.data).slice(0, 200) }; }\n}\n\nif (payload.error === 'COOKIE_DEAD') {\n  return [{ json: { ok: false, note: 'COOKIE_DEAD — нужна свежая cookie' } }];\n}\n\nconst s = Array.isArray(payload.stats) && payload.stats.length ? payload.stats[0] : {};\nconst b = payload.board || {};\n\nconst point = {\n  ts: payload.ts,\n  hour: new Date(new Date(payload.ts).getTime() + 4 * 3600 * 1000).toISOString().slice(11, 16),\n  na_linii: s.na_linii !== undefined ? s.na_linii : null,\n  available: s.available !== undefined ? s.available : null,\n  gotov_bez_zakaza: s.gotov_bez_zakaza !== undefined ? s.gotov_bez_zakaza : null,\n  gorit: s.gorit !== undefined ? s.gorit : null,\n  ishem: s.ishem !== undefined ? s.ishem : null,\n  slognost: s.slognost !== undefined ? s.slognost : null,\n  board_total: b.total !== undefined ? b.total : null,\n  board_burning: b.burning !== undefined ? b.burning : null,\n  board_burning_free: b.burningNoDriver !== undefined ? b.burningNoDriver : null\n};\n\ntry { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}\n\nlet arr = [];\ntry { arr = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { arr = []; }\nif (!Array.isArray(arr)) arr = [];\narr.push(point);\n\nconst cut = Date.now() - 8 * 24 * 3600 * 1000;\narr = arr.filter(function (p) { return new Date(p.ts).getTime() > cut; });\n\nfs.writeFileSync(file, JSON.stringify(arr));\n\nreturn [{ json: { ok: true, wrote: point, totalPoints: arr.length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        512
+      ],
+      "id": "7244bd58-b9b9-4ec4-afa1-9eefc67e053d",
+      "name": "Пульс · запись"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -256,
+        512
+      ],
+      "id": "dca56d13-1c90-4607-8df8-164fe94e57d9",
+      "name": "Пульс · 10 мин"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://browserless:3000/function?token=milli2026browser",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/javascript",
+        "body": "=export default async function ({ page }) {\n  const out = { ts: new Date().toISOString(), stats: [], board: {} };\n\n  await page.setCookie({\n    name: 'cabinetUpTaxi',\n    value: '{{ $json.cookie }}',\n    domain: '1165.upphone.ru',\n    path: '/',\n    httpOnly: false,\n    secure: false\n  });\n\n  await page.goto('https://1165.upphone.ru:4422/web/cab/1165/monitoring/stats', { waitUntil: 'domcontentloaded', timeout: 45000 });\n  await new Promise(r => setTimeout(r, 6000));\n  if (page.url().indexOf('login.uptaxi.ru') !== -1) {\n    return { data: JSON.stringify({ error: 'COOKIE_DEAD' }), type: 'application/json' };\n  }\n\n  const statsRaw = await page.evaluate(() => {\n    try {\n      const rows = window.$('#grid-table').jqxGrid('getrows') || [];\n      if (!rows.length) return JSON.stringify([]);\n      const L = rows[rows.length - 1];\n      return JSON.stringify([{\n        dt: L.dt,\n        na_linii: Number(L.na_linii),\n        available: Number(L.available),\n        gotov_bez_zakaza: Number(L.gotov_bez_zakaza),\n        gorit: Number(L.gorit),\n        ishem: Number(L.ishem),\n        slognost: Number(L.slognost),\n        slognost2: Number(L.slognost2),\n        v_rabote: Number(L.v_rabote)\n      }]);\n    } catch (e) { return JSON.stringify([]); }\n  });\n  try { out.stats = JSON.parse(statsRaw); } catch (e) { out.stats = []; }\n\n  await page.goto('https://1165.upphone.ru:4422/web/cab/1165/monitoring/orders', { waitUntil: 'domcontentloaded', timeout: 45000 });\n  await new Promise(r => setTimeout(r, 5000));\n\n  const boardRaw = await page.evaluate(() => {\n    try {\n      const rows = window.$('#orders-table').jqxGrid('getrows') || [];\n      let burning = 0, free = 0;\n      rows.forEach(function (r) {\n        if (String(r.status) === 'burning') {\n          burning++;\n          if (!r.pozivnoi) free++;\n        }\n      });\n      return JSON.stringify({ total: rows.length, burning: burning, burningNoDriver: free });\n    } catch (e) { return JSON.stringify({ total: null, burning: null, burningNoDriver: null }); }\n  });\n  try { out.board = JSON.parse(boardRaw); } catch (e) { out.board = {}; }\n\n  return { data: JSON.stringify(out), type: 'application/json' };\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        272,
+        512
+      ],
+      "id": "88999407-4e99-4295-a700-997fcf32dd7e",
+      "name": "Пульс · снять"
+    },
+    {
+      "parameters": {
+        "jsCode": "// «Тема дня» — выбор темы, зоны и фактов. Выбор из списков = работа Code (урок 11.2).\nconst w = $input.first().json;\nlet tempC = null;\ntry { tempC = Math.round(w.current.temperature_2m); } catch (e) {}\n\nconst now = new Date();\nconst baku = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Baku' }));\nconst doy = Math.floor((baku - new Date(baku.getFullYear(), 0, 0)) / 86400000);\n\nconst pillars = [\n  { id: 'humor', hint: 'Yumor: gündəlik taksi/Bakı səhnəsi. Yüngül ton, emoji olar. Qiymət yazma.' },\n  { id: 'value', hint: 'Praktik fayda: sürətli çatma, sabit qiymət 3.50 manatdan, tətbiqi yüklə.' },\n  { id: 'local', hint: 'Bakı yayı / istisi: yay ovqatı, kondisionerli maşında sərinlik.' },\n];\nconst pillar = pillars[doy % pillars.length];\n\nconst zones = ['Binəqədi','Yasamal','Sabunçu','Abşeron','Nəsimi'];\nconst zone = zones[doy % zones.length];\n\nreturn [{ json: {\n  pillar: pillar.id,\n  topicHint: pillar.hint,\n  zone,\n  tempC,\n  priceFrom: '3.50',\n  cta: 'GooglePlay & AppStore',\n  dateBaku: baku.toISOString().slice(0,10),\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        2832
+      ],
+      "id": "a64c078b-6e8d-4c22-93aa-5efaa88227c5",
+      "name": "Kontent · тема дня"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Mövzu: {{ $json.topicHint }}\nZona: {{ $json.zone }}\nHava: {{ $json.tempC ? $json.tempC + '°C' : 'məlum deyil' }}\nQiymət: {{ $json.priceFrom }} manatdan\nCTA: {{ $json.cta }}",
+        "options": {
+          "systemMessage": "Sən Milli Taksi üçün TikTok üçün qısa video ssenariləri yazan azərbaycanlı kontent-müəllifisən.\n\nQAYDALAR (pozma):\n- Yalnız Azərbaycan dilində yaz. Kiril hərfləri qadağandır.\n- Müraciət \"siz\" formasında, hörmətlə.\n- Qısa: 2–4 cümlə, ilk saniyədə güclü hook.\n- Qiymət yalnız \"3.50 manatdan\" kimi göstər. Komissiya haqqında HEÇ NƏ yazma.\n- Endirim, aksiya, promokod TƏKLİF ETMƏ — heç vaxt. Qiymət sabitdir.\n- CTA hər videoda: tətbiqi yüklə (GooglePlay & AppStore).\n- Rəqəmləri yalnız verilən faktlardan götür, uydurma.\n\nCavabı YALNIZ bu JSON kimi ver, başqa heç nə yazma:\n{\"script\":\"...\",\"tiktokCaption\":\"...\",\"tiktokHashtags\":\"#Bakı #taksi #Milli\",\"igCaption\":\"...\",\"shortsTitle\":\"...\"}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        528,
+        2832
+      ],
+      "id": "db98c3d7-f4e9-42ae-86eb-cc37f3305745",
+      "name": "Kontent · сценарий"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Парсит ответ модели, проверяет предохранителем, собирает сообщение.\nconst raw = $input.first().json;\nlet text = raw.output || raw.text || raw.response || '';\nif (typeof text === 'object') text = JSON.stringify(text);\n\nlet pkg;\ntry {\n  const m = text.match(/\\{[\\s\\S]*\\}/);\n  pkg = JSON.parse(m ? m[0] : text);\n} catch (e) {\n  return [{ json: { ok:false, msg:'⚠️ Milli-Kontent: модель вернула не-JSON. Перезапусти.' } }];\n}\n\nconst script = (pkg.script || '').trim();\nconst blob = script + ' ' + (pkg.tiktokCaption || '');\nconst cyr = /[а-яё]/i.test(blob);\nconst promo = /(endirim|aksiya|promokod|güzəşt|скид|промо)/i.test(blob);\nconst short = script.length < 15;\nconst long = script.length > 600;\n\nif (cyr || promo || short || long || !script) {\n  const why = cyr?'кириллица' : promo?'промо/скидка' : short?'коротко' : long?'длинно' : 'пусто';\n  return [{ json: { ok:false, msg:'⚠️ Milli-Kontent: пакет отклонён предохранителем ('+why+'). Не отправляю.' } }];\n}\n\nconst b = $('Kontent · тема дня').first().json;\nconst msg =\n`🎬 Контент-пакет · ${b.dateBaku}\nТема: ${b.pillar} · Зона: ${b.zone}${b.tempC?` · ${b.tempC}°`:''}\n\n📝 Озвучка (AZ):\n${script}\n\n🏷 TikTok:\n${pkg.tiktokCaption}\n${pkg.tiktokHashtags}\n\n📸 Instagram: ${pkg.igCaption}\n▶️ Shorts: ${pkg.shortsTitle}\n\n⏰ Лучшее время: 18:00 (вечерний пик)\n👉 Собери в CapCut и пришли готовое видео — поставлю в TikTok+IG+Shorts.`;\n\nreturn [{ json: { ok:true, msg } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        2832
+      ],
+      "id": "a47a485b-081a-400e-99ba-8f9831ec8025",
+      "name": "Kontent · сборка"
+    },
+    {
+      "parameters": {
+        "chatId": "8309087590",
+        "text": "={{ $json.msg }}",
+        "additionalFields": {},
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1040,
+        2832
+      ],
+      "id": "330a53e0-a3ca-4b2f-a3c9-e6be261b5b37",
+      "name": "Kontent · в telegram",
+      "webhookId": "ec7e6ef5-cb0b-4fc8-8dd0-515e90a7ca0c",
+      "credentials": {
+        "telegramApi": {
+          "id": "qbHB49SQFhw6T0QT",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -256,
+        2832
+      ],
+      "id": "cbbdae84-1788-46fb-955d-0b0fee7d0f8c",
+      "name": "Kontent · 7:00"
+    },
+    {
+      "parameters": {
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=40.4093&longitude=49.8671&current=temperature_2m",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        2832
+      ],
+      "id": "939f3507-b7da-44ab-a3d3-6fbaa595d54a",
+      "name": "Kontent · погода"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-6",
+          "cachedResultName": "Claude Sonnet 4.6"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.5,
+      "position": [
+        528,
+        2992
+      ],
+      "id": "f59b726e-95ea-4e78-96f4-f9396bb01b41",
+      "name": "Kontent · модель",
+      "credentials": {
+        "anthropicApi": {
+          "id": "8nOF0ya3EctZTilt",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "Куки · это куки?-c1",
+              "leftValue": "={{ $('Милли · триггер TG').item.json.message.text }}",
+              "rightValue": "куки|[a-zA-Z0-9]{16,64}",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f7b94d16-7d50-4f67-a058-cc504a60d123",
+      "name": "Куки · это куки?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst dir = '/home/node/.n8n/milli';\nconst txt = String($json.message.text || '').trim();\nconst m = txt.match(/([a-z0-9]{16,64})/i);\nconst token = m ? m[1] : '';\n\nif (!/^[a-z0-9]{16,64}$/i.test(token)) {\n  return [{ json: { ok: false, reply: '❌ Не похоже на токен. Пришли: куки <токен>\\nПолучил: ' + token.slice(0, 40), cookie: '' } }];\n}\ntry { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}\nfs.writeFileSync(dir + '/cookie.json', JSON.stringify({ cookie: token, updated: new Date().toISOString() }));\nreturn [{ json: { ok: true, cookie: token, reply: '' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        0
+      ],
+      "id": "f1f1b1e9-9aea-4af9-986a-4856ae25dc9f",
+      "name": "Куки · запись"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://browserless:3000/function?token=milli2026browser",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/javascript",
+        "body": "=export default async function ({ page }) {\n  const out = { alive: false, note: '' };\n  await page.setCookie({ name: 'cabinetUpTaxi', value: '{{ $json.cookie }}', domain: '1165.upphone.ru', path: '/', httpOnly: false, secure: false });\n  try {\n    await page.goto('https://1165.upphone.ru:4422/web/cab/1165/monitoring/stats', { waitUntil: 'domcontentloaded', timeout: 45000 });\n    await new Promise(r => setTimeout(r, 6000));\n    if (page.url().indexOf('login.uptaxi.ru') !== -1) {\n      out.note = 'редирект на логин';\n      return { data: JSON.stringify(out), type: 'application/json' };\n    }\n    const rows = await page.evaluate(() => {\n      try {\n        const r = window.$('#grid-table').jqxGrid('getrows') || [];\n        if (!r.length) return JSON.stringify({ n: 0 });\n        const L = r[r.length - 1];\n        return JSON.stringify({ n: r.length, na_linii: L.na_linii, gorit: L.gorit, available: L.available });\n      } catch (e) { return JSON.stringify({ n: 0 }); }\n    });\n    const p = JSON.parse(rows);\n    out.alive = p.n > 0;\n    out.na_linii = p.na_linii;\n    out.gorit = p.gorit;\n    out.available = p.available;\n    out.note = p.n > 0 ? 'ок' : 'грид пуст';\n  } catch (e) { out.note = String(e).slice(0, 80); }\n  return { data: JSON.stringify(out), type: 'application/json' };\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        528,
+        0
+      ],
+      "id": "880de6b5-e066-49af-9ed3-1399c1fc635c",
+      "name": "Куки · проверка",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nlet p = j;\nif (typeof j.data === 'string') { try { p = JSON.parse(j.data); } catch (e) { p = {}; } }\n\nconst prev = $('Куки · запись').first().json;\nif (prev.ok === false) return [{ json: { reply: prev.reply } }];\n\nif (p.alive) {\n  return [{ json: { reply: '✅ Куки принят и жив.\\nНа линии: ' + p.na_linii + ' · Горит: ' + p.gorit + ' · Свободно: ' + p.available + '\\nПульс, Сканер, Вербовщик и Sifariş теперь работают.' } }];\n}\nreturn [{ json: { reply: '❌ Куки записан, но UpTaxi его не принял (' + (p.note || '?') + ').\\nВозьми свежий: login.uptaxi.ru → F12 → Console.' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        0
+      ],
+      "id": "e2d851d7-ef0b-4381-be5b-ae0a66a6ad77",
+      "name": "Куки · вердикт"
+    },
+    {
+      "parameters": {
+        "chatId": "8309087590",
+        "text": "={{ $json.reply }}",
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "f9bc5d64-7b27-4f61-bece-aa8dbf7f1669",
+      "name": "Куки · ответ",
+      "webhookId": "d1aef6b3-34cf-4118-b11a-04fc182cf1cf",
+      "credentials": {
+        "telegramApi": {
+          "id": "qbHB49SQFhw6T0QT",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */2 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -256,
+        208
+      ],
+      "id": "565d9048-2f81-4665-81c0-341a1eba3da1",
+      "name": "Куки · сторож 2ч"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nlet cookie = '';\nlet updated = null;\ntry {\n  const j = JSON.parse(fs.readFileSync('/home/node/.n8n/milli/cookie.json', 'utf8'));\n  cookie = j.cookie || '';\n  updated = j.updated || null;\n} catch (e) {}\nconst items = $input.all();\nif (!items.length) return [{ json: { cookie: cookie, cookieUpdated: updated } }];\nreturn items.map(function (i) {\n  const o = Object.assign({}, i.json);\n  o.cookie = cookie;\n  o.cookieUpdated = updated;\n  return { json: o };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        208
+      ],
+      "id": "94a77945-9ea7-4bd4-bf0d-bd64f0f7a423",
+      "name": "Куки · чтение"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://browserless:3000/function?token=milli2026browser",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/javascript",
+        "body": "=export default async function ({ page }) {\n  const out = { alive: false, note: '' };\n  await page.setCookie({ name: 'cabinetUpTaxi', value: '{{ $json.cookie }}', domain: '1165.upphone.ru', path: '/', httpOnly: false, secure: false });\n  try {\n    await page.goto('https://1165.upphone.ru:4422/web/cab/1165/monitoring/stats', { waitUntil: 'domcontentloaded', timeout: 45000 });\n    await new Promise(r => setTimeout(r, 6000));\n    if (page.url().indexOf('login.uptaxi.ru') !== -1) {\n      out.note = 'редирект на логин';\n      return { data: JSON.stringify(out), type: 'application/json' };\n    }\n    const rows = await page.evaluate(() => {\n      try {\n        const r = window.$('#grid-table').jqxGrid('getrows') || [];\n        if (!r.length) return JSON.stringify({ n: 0 });\n        const L = r[r.length - 1];\n        return JSON.stringify({ n: r.length, na_linii: L.na_linii, gorit: L.gorit, available: L.available });\n      } catch (e) { return JSON.stringify({ n: 0 }); }\n    });\n    const p = JSON.parse(rows);\n    out.alive = p.n > 0;\n    out.na_linii = p.na_linii;\n    out.gorit = p.gorit;\n    out.available = p.available;\n    out.note = p.n > 0 ? 'ок' : 'грид пуст';\n  } catch (e) { out.note = String(e).slice(0, 80); }\n  return { data: JSON.stringify(out), type: 'application/json' };\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        272,
+        208
+      ],
+      "id": "5f844d84-8a49-4f8e-aeb7-658a3edd3bed",
+      "name": "Куки · пинг",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nlet p = j;\nif (typeof j.data === 'string') { try { p = JSON.parse(j.data); } catch (e) { p = {}; } }\nreturn [{ json: { alive: !!p.alive, note: p.note || '' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        208
+      ],
+      "id": "dc7d439d-a661-4894-85cb-a982d76d869c",
+      "name": "Куки · жив?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "Куки · тревога?-c1",
+              "leftValue": "={{ $json.alive }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        784,
+        208
+      ],
+      "id": "1b37889c-2766-4e26-b689-7486cb87f07c",
+      "name": "Куки · тревога?"
+    },
+    {
+      "parameters": {
+        "chatId": "8309087590",
+        "text": "🔴 Куки UpTaxi умер. Пульс, Сканер, Вербовщик и Sifariş встали.\n\nВозьми свежий:\n1) login.uptaxi.ru → 1165 / MilliBot / Leylusa0618\n2) F12 → Console\n3) document.cookie.split('; ').find(c => c.startsWith('cabinetUpTaxi=')).split('=')[1]\n4) Пришли мне: куки <токен>",
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1040,
+        208
+      ],
+      "id": "d2c7c912-6d8e-4aac-a767-845847728d70",
+      "name": "Куки · тревога",
+      "webhookId": "f9a3a1a0-334d-48b6-8630-ce6fef872f91",
+      "credentials": {
+        "telegramApi": {
+          "id": "qbHB49SQFhw6T0QT",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nlet cookie = '';\nlet updated = null;\ntry {\n  const j = JSON.parse(fs.readFileSync('/home/node/.n8n/milli/cookie.json', 'utf8'));\n  cookie = j.cookie || '';\n  updated = j.updated || null;\n} catch (e) {}\nconst items = $input.all();\nif (!items.length) return [{ json: { cookie: cookie, cookieUpdated: updated } }];\nreturn items.map(function (i) {\n  const o = Object.assign({}, i.json);\n  o.cookie = cookie;\n  o.cookieUpdated = updated;\n  return { json: o };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        512
+      ],
+      "id": "2fdcab67-040c-4b18-9ebf-1a9905aaca2a",
+      "name": "Пульс · куки"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nlet cookie = '';\nlet updated = null;\ntry {\n  const j = JSON.parse(fs.readFileSync('/home/node/.n8n/milli/cookie.json', 'utf8'));\n  cookie = j.cookie || '';\n  updated = j.updated || null;\n} catch (e) {}\nconst items = $input.all();\nif (!items.length) return [{ json: { cookie: cookie, cookieUpdated: updated } }];\nreturn items.map(function (i) {\n  const o = Object.assign({}, i.json);\n  o.cookie = cookie;\n  o.cookieUpdated = updated;\n  return { json: o };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        800
+      ],
+      "id": "0041bcde-3b75-4dfc-85ba-7382e27daf0d",
+      "name": "Sifariş · куки"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nlet cookie = '';\nlet updated = null;\ntry {\n  const j = JSON.parse(fs.readFileSync('/home/node/.n8n/milli/cookie.json', 'utf8'));\n  cookie = j.cookie || '';\n  updated = j.updated || null;\n} catch (e) {}\nconst items = $input.all();\nif (!items.length) return [{ json: { cookie: cookie, cookieUpdated: updated } }];\nreturn items.map(function (i) {\n  const o = Object.assign({}, i.json);\n  o.cookie = cookie;\n  o.cookieUpdated = updated;\n  return { json: o };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1056
+      ],
+      "id": "cdc21db3-99e2-4efa-a794-33946f4f52cc",
+      "name": "Сканер · куки"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nlet cookie = '';\nlet updated = null;\ntry {\n  const j = JSON.parse(fs.readFileSync('/home/node/.n8n/milli/cookie.json', 'utf8'));\n  cookie = j.cookie || '';\n  updated = j.updated || null;\n} catch (e) {}\nconst items = $input.all();\nif (!items.length) return [{ json: { cookie: cookie, cookieUpdated: updated } }];\nreturn items.map(function (i) {\n  const o = Object.assign({}, i.json);\n  o.cookie = cookie;\n  o.cookieUpdated = updated;\n  return { json: o };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        1312
+      ],
+      "id": "c1e7c07e-dffa-4147-bc32-fa719e328dc8",
+      "name": "Вербовщик · куки"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nlet cookie = '';\nlet updated = null;\ntry {\n  const j = JSON.parse(fs.readFileSync('/home/node/.n8n/milli/cookie.json', 'utf8'));\n  cookie = j.cookie || '';\n  updated = j.updated || null;\n} catch (e) {}\nconst items = $input.all();\nif (!items.length) return [{ json: { cookie: cookie, cookieUpdated: updated } }];\nreturn items.map(function (i) {\n  const o = Object.assign({}, i.json);\n  o.cookie = cookie;\n  o.cookieUpdated = updated;\n  return { json: o };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        3104
+      ],
+      "id": "b628fb73-c759-42dc-aced-0e286a8fc266",
+      "name": "Разведчик · куки"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        3104
+      ],
+      "id": "873b579c-990e-492c-9433-d478c8565ea8",
+      "name": "Разведчик · запуск вручную"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://browserless:3000/function?token=milli2026browser",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/javascript",
+        "body": "=export default async function ({ page }) {\n  const out = { url: '', note: 'песочница — меняй код под задачу' };\n  await page.setCookie({ name: 'cabinetUpTaxi', value: '{{ $json.cookie }}', domain: '1165.upphone.ru', path: '/', httpOnly: false, secure: false });\n  await page.goto('https://1165.upphone.ru:4422/web/cab/1165/monitoring/stats', { waitUntil: 'domcontentloaded', timeout: 45000 });\n  await new Promise(r => setTimeout(r, 6000));\n  out.url = page.url();\n  out.alive = out.url.indexOf('login.uptaxi.ru') === -1;\n  return { data: JSON.stringify(out), type: 'application/json' };\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        272,
+        3104
+      ],
+      "id": "7a46a5ea-eee2-4f51-b30e-9fd3c5dc7e1e",
+      "name": "Разведчик · песочница"
+    },
+    {
+      "parameters": {
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=40.4093&longitude=49.8671&current=temperature_2m,weather_code&daily=temperature_2m_max&forecast_days=1&timezone=Asia%2FBaku",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        2304
+      ],
+      "id": "9774a0e3-a554-437b-8b66-afb39d4311c6",
+      "name": "Пуш обед · погода"
+    },
+    {
+      "parameters": {
+        "chatId": "8309087590",
+        "text": "=🔵 ПУЛЬС ({{ $json.wrote ? $json.wrote.hour : '—' }}, {{ $json.ageMin!=null ? $json.ageMin+' мин назад' : '' }})\n{{ $json.ok===false ? '⚠ '+$json.note : '' }}На линии: {{ $json.wrote ? $json.wrote.na_linii : '—' }}\nГорит: {{ $json.wrote ? $json.wrote.gorit : '—' }}\nСвободно: {{ $json.wrote ? $json.wrote.available : '—' }}\n\nДоска: всего {{ $json.wrote ? $json.wrote.board_total : '—' }}, горит {{ $json.wrote ? $json.wrote.board_burning : '—' }}, без водителя {{ $json.wrote ? $json.wrote.board_burning_free : '—' }}",
+        "additionalFields": {},
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -600,
+        -1500
+      ],
+      "id": "a1b2c3d4-0002-4000-8000-00000000pulr",
+      "name": "Пульс · ответ TG",
+      "credentials": {
+        "telegramApi": {
+          "id": "qbHB49SQFhw6T0QT",
+          "name": "Telegram account"
+        }
+      },
+      "webhookId": "a766a3c3-d382-4659-bb51-5ffb9213f6b5"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "filters": {
+            "filters": [
+              {
+                "column": "text",
+                "operatorType": "contains",
+                "value1": "куки"
+              },
+              {
+                "column": "text",
+                "operatorType": "contains",
+                "value1": "пульс"
+              },
+              {
+                "column": "text",
+                "operatorType": "contains",
+                "value1": "ok"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -2160,
+        -1600
+      ],
+      "id": "b2c3d4e5-0001-4000-8000-00000000pult",
+      "name": "Милли · триггер TG",
+      "credentials": {
+        "telegramApi": {
+          "id": "qbHB49SQFhw6T0QT",
+          "name": "Telegram account"
+        }
+      },
+      "webhookId": "6968f9a1-e1b8-4dc7-9db6-996f1cbb4c4d"
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "s-kuki",
+                    "leftValue": "={{ $json.message.text.toLowerCase() }}",
+                    "rightValue": "куки",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "куки"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "s-puls",
+                    "leftValue": "={{ $json.message.text.toLowerCase() }}",
+                    "rightValue": "пульс",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "пульс"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "s-inv",
+                    "leftValue": "={{ $json.message.text.toLowerCase() }}",
+                    "rightValue": "инвентар",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "инвентарь"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "s-ok",
+                    "leftValue": "={{ $json.message.text.toLowerCase() }}",
+                    "rightValue": "ok",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ok"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -1700,
+        -200
+      ],
+      "id": "c3d4e5f6-0001-4000-8000-00000000rout",
+      "name": "Милли · роутер"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 3
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2200,
+        600
+      ],
+      "id": "d4e5f6a7-0001-4000-8000-00000000arch",
+      "name": "Архив · 03:00"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst dir = '/home/node/.n8n/milli';\nconst stamp = new Date().toISOString().slice(0,10);\nconst out = { ts: new Date().toISOString(), files: {} };\nconst files = ['cookie.json','pulse.json','driver_positions.json','sifaris_sent_orders.json','pending_push.txt'];\nfor (const f of files) {\n  try { out.files[f] = fs.readFileSync(dir+'/'+f,'utf8').slice(0,5000); } catch(e){ out.files[f] = 'MISSING'; }\n}\nconst snap = JSON.stringify(out, null, 2);\nfs.writeFileSync(dir+'/archive_'+stamp+'.json', snap, 'utf8');\nreturn [{ json: { ok: true, wrote: 'archive_'+stamp+'.json', size: snap.length } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.1,
+      "position": [
+        -1950,
+        600
+      ],
+      "id": "d4e5f6a7-0002-4000-8000-00000000archc",
+      "name": "Архив · снимок"
+    },
+    {
+      "parameters": {
+        "chatId": "8309087590",
+        "text": "=🗄 Резервная копия офиса сохранена: {{ $json.wrote }} ({{ $json.size }} байт).",
+        "additionalFields": {},
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1700,
+        600
+      ],
+      "id": "d4e5f6a7-0003-4000-8000-00000000archt",
+      "name": "Архив · мне",
+      "credentials": {
+        "telegramApi": {
+          "id": "qbHB49SQFhw6T0QT",
+          "name": "Telegram account"
+        }
+      },
+      "webhookId": "580b848b-070e-431c-b0b8-c2703bec2034"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst dir='/home/node/.n8n/milli';\nlet draft='';\ntry { draft = fs.readFileSync(dir+'/pending_push.txt','utf8'); } catch(e){ draft='(нет черновика)'; }\nreturn [{ json: { confirmed: true, draft } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2.1,
+      "position": [
+        -1450,
+        200
+      ],
+      "id": "e5f6a7b8-0001-4000-8000-00000000okcd",
+      "name": "Пуш · ок-рассылка"
+    },
+    {
+      "parameters": {
+        "chatId": "8309087590",
+        "text": "=✅ Ok получен. Черновик готов к рассылке водителям:\n{{ $json.draft }}",
+        "additionalFields": {},
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1200,
+        200
+      ],
+      "id": "e5f6a7b8-0002-4000-8000-00000000oktg",
+      "name": "Пуш · ок-мне",
+      "credentials": {
+        "telegramApi": {
+          "id": "qbHB49SQFhw6T0QT",
+          "name": "Telegram account"
+        }
+      },
+      "webhookId": "4c9b8b02-9419-488e-aea2-992b308a9a1f"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs=require('fs');\nlet arr=[]; try{ arr=JSON.parse(fs.readFileSync('/home/node/.n8n/milli/pulse.json','utf8')); }catch(e){}\nif(!Array.isArray(arr)||!arr.length){ return [{json:{wrote:null,ok:false,note:'нет данных пульса пока (сбор идёт каждые 10 мин)'}}]; }\nconst last=arr[arr.length-1];\nreturn [{json:{wrote:last, ok:true, ageMin: Math.round((Date.now()-new Date(last.ts).getTime())/60000)}}];"
+      },
+      "id": "02d654f6-cea7-426a-8c62-29ffe4cf1370",
+      "name": "Пульс · читать",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        692
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs=require('fs');let c='';try{const j=JSON.parse(fs.readFileSync('/home/node/.n8n/milli/cookie.json','utf8'));c=j.cookie||'';}catch(e){}return [{json:{cookie:c}}];"
+      },
+      "id": "50a50548-1b13-43ed-9e8e-a8dbadc4052d",
+      "name": "Тариф · куки",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        2400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://browserless:3000/function?token=milli2026browser",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/javascript",
+        "body": "=export default async function ({ page }) {\n  const out={ts:new Date().toISOString(),error:null};\n  const xhr=[];\n  page.on('response', async (resp)=>{ try{ const u=resp.url();\n    if(/tarif|tariff|directory/i.test(u) && !/\\.(js|css|png|jpg|woff|svg)/i.test(u)){\n      let b=''; try{b=(await resp.text());}catch(e){}\n      xhr.push({url:u.slice(0,200),len:b.length,sample:b.slice(0,3000)});\n    }}catch(e){} });\n  await page.setCookie({name:'cabinetUpTaxi',value:'{{ $json.cookie }}',domain:'1165.upphone.ru',path:'/',httpOnly:false,secure:false});\n  await page.goto('https://1165.upphone.ru:4422/web/cab/1165/directory/tariffs',{waitUntil:'networkidle2',timeout:45000});\n  await new Promise(r=>setTimeout(r,8000));\n  if(page.url().indexOf('login')!==-1){return {data:JSON.stringify({error:'COOKIE_DEAD'}),type:'application/json'};}\n  const grid=await page.evaluate(()=>{\n    const o={rows:[],gridFound:false};\n    // try jqxGrid first\n    try{ if(window.$ && window.$('#grid-table').length){ const rows=window.$('#grid-table').jqxGrid('getrows')||[]; o.gridFound=true; o.rows=rows.map(function(r){return r;}); return o; } }catch(e){}\n    // try webix\n    try{ if(window.$$){ for(const id in webix.ui.views){} } }catch(e){}\n    // fallback: scrape any table/grid rows text\n    const txt=[];\n    document.querySelectorAll('.jqx-grid-cell, [role=\"row\"], tr').forEach(function(el){ const t=(el.textContent||'').trim().replace(/\\s+/g,' '); if(t&&t.length<200) txt.push(t); });\n    o.textRows=Array.from(new Set(txt)).slice(0,120);\n    return o;\n  });\n  out.grid=grid; out.xhr=xhr.slice(0,10);\n  return {data:JSON.stringify(out),type:'application/json'};\n}",
+        "options": {
+          "timeout": 170000
+        }
+      },
+      "id": "ad24b109-9597-4b0d-9ea3-fdd02e5c8dcc",
+      "name": "Тариф · сбор",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -180,
+        2400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs=require('fs');\nlet p={};try{p=typeof $json.data==='string'?JSON.parse($json.data):($json.data||$json);}catch(e){p=$json;}\nconst dir='/home/node/.n8n/milli';try{fs.mkdirSync(dir,{recursive:true});}catch(e){}\nconst path=dir+'/tariffs_'+Date.now()+'.json';\ntry{fs.writeFileSync(path,JSON.stringify(p,null,2));}catch(e){}\nconst g=p.grid||{};\nreturn [{json:{gridFound:g.gridFound,rowCount:(g.rows||[]).length,textRowCount:(g.textRows||[]).length,\n  xhrCount:(p.xhr||[]).length,path:path,error:p.error||null,\n  rowsSample:JSON.stringify((g.rows||[]).slice(0,3)).slice(0,1500),\n  textSample:(g.textRows||[]).slice(0,40).join(' | ').slice(0,1500),\n  xhrUrls:(p.xhr||[]).map(function(x){return x.url+' ('+x.len+')';}).join('\\n')}}];"
+      },
+      "id": "bf475c4c-f3e8-4397-839d-484e17e04260",
+      "name": "Тариф · запись",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        60,
+        2400
+      ]
+    }
+  ],
+  "connections": {
+    "Пуш утро · 7:00": {
+      "main": [
+        [
+          {
+            "node": "Пуш утро · погода",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пуш утро · погода": {
+      "main": [
+        [
+          {
+            "node": "Пуш утро · шаблон",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пуш утро · черновик": {
+      "main": [
+        [
+          {
+            "node": "Пуш утро · мне",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Мозг · рассылка всем": {
+      "main": [
+        [
+          {
+            "node": "Мозг · очистить черновик",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Мозг · очистить черновик": {
+      "main": [
+        [
+          {
+            "node": "Мозг · готово",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пуш обед · 13:00": {
+      "main": [
+        [
+          {
+            "node": "Пуш обед · погода",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пуш обед · черновик": {
+      "main": [
+        [
+          {
+            "node": "Пуш обед · мне",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Мозг · очистка текста": {
+      "main": [
+        [
+          {
+            "node": "Мозг · рассылка всем",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пуш вечер · 17:00": {
+      "main": [
+        [
+          {
+            "node": "Пуш вечер · шаблон",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пуш вечер · черновик": {
+      "main": [
+        [
+          {
+            "node": "Пуш вечер · мне",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пуш вечер · шаблон": {
+      "main": [
+        [
+          {
+            "node": "Пуш вечер · черновик",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пуш обед · шаблон": {
+      "main": [
+        [
+          {
+            "node": "Пуш обед · черновик",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пуш утро · шаблон": {
+      "main": [
+        [
+          {
+            "node": "Пуш утро · черновик",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Вербовщик · 3 мин": {
+      "main": [
+        [
+          {
+            "node": "Вербовщик · позиции",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sifariş · 3 мин 8-20": {
+      "main": [
+        [
+          {
+            "node": "Sifariş · память",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sifariş · пуш": {
+      "main": [
+        [
+          {
+            "node": "Sifariş · отметка",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сканер · сбор": {
+      "main": [
+        [
+          {
+            "node": "Сканер · запись",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пульс · снять": {
+      "main": [
+        [
+          {
+            "node": "Пульс · запись",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kontent · тема дня": {
+      "main": [
+        [
+          {
+            "node": "Kontent · сценарий",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kontent · сценарий": {
+      "main": [
+        [
+          {
+            "node": "Kontent · сборка",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kontent · сборка": {
+      "main": [
+        [
+          {
+            "node": "Kontent · в telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kontent · 7:00": {
+      "main": [
+        [
+          {
+            "node": "Kontent · погода",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kontent · погода": {
+      "main": [
+        [
+          {
+            "node": "Kontent · тема дня",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kontent · модель": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Kontent · сценарий",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Куки · это куки?": {
+      "main": [
+        [
+          {
+            "node": "Куки · запись",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Пуш · ок-рассылка",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Куки · запись": {
+      "main": [
+        [
+          {
+            "node": "Куки · проверка",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Куки · проверка": {
+      "main": [
+        [
+          {
+            "node": "Куки · вердикт",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Куки · вердикт": {
+      "main": [
+        [
+          {
+            "node": "Куки · ответ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Куки · сторож 2ч": {
+      "main": [
+        [
+          {
+            "node": "Куки · чтение",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Куки · чтение": {
+      "main": [
+        [
+          {
+            "node": "Куки · пинг",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Куки · пинг": {
+      "main": [
+        [
+          {
+            "node": "Куки · жив?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Куки · жив?": {
+      "main": [
+        [
+          {
+            "node": "Куки · тревога?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Куки · тревога?": {
+      "main": [
+        [
+          {
+            "node": "Куки · тревога",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пульс · 10 мин": {
+      "main": [
+        [
+          {
+            "node": "Пульс · куки",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пульс · куки": {
+      "main": [
+        [
+          {
+            "node": "Пульс · снять",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сканер · 5 мин": {
+      "main": [
+        [
+          {
+            "node": "Сканер · куки",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сканер · куки": {
+      "main": [
+        [
+          {
+            "node": "Сканер · сбор",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sifariş · память": {
+      "main": [
+        [
+          {
+            "node": "Sifariş · куки",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sifariş · куки": {
+      "main": [
+        [
+          {
+            "node": "Sifariş · пуш",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Вербовщик · позиции": {
+      "main": [
+        [
+          {
+            "node": "Вербовщик · куки",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Вербовщик · куки": {
+      "main": [
+        [
+          {
+            "node": "Вербовщик · отправка (ТЕСТ id5)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Разведчик · запуск вручную": {
+      "main": [
+        [
+          {
+            "node": "Разведчик · куки",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Разведчик · куки": {
+      "main": [
+        [
+          {
+            "node": "Разведчик · песочница",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пуш обед · погода": {
+      "main": [
+        [
+          {
+            "node": "Пуш обед · шаблон",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пульс · запись": {
+      "main": [
+        []
+      ]
+    },
+    "Милли · триггер TG": {
+      "main": [
+        [
+          {
+            "node": "Милли · роутер",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Милли · роутер": {
+      "main": [
+        [
+          {
+            "node": "Куки · запись",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Пульс · читать",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [
+          {
+            "node": "Пуш · ок-рассылка",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Архив · 03:00": {
+      "main": [
+        [
+          {
+            "node": "Архив · снимок",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Архив · снимок": {
+      "main": [
+        [
+          {
+            "node": "Архив · мне",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пуш · ок-рассылка": {
+      "main": [
+        [
+          {
+            "node": "Пуш · ок-мне",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Пульс · читать": {
+      "main": [
+        [
+          {
+            "node": "Пульс · ответ TG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Тариф · куки": {
+      "main": [
+        [
+          {
+            "node": "Тариф · сбор",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Тариф · сбор": {
+      "main": [
+        [
+          {
+            "node": "Тариф · запись",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": {
+    "node:Пуш утро · 7:00": {
+      "recurrenceRules": []
+    },
+    "node:Пуш обед · 13:00": {
+      "recurrenceRules": []
+    },
+    "node:Пуш вечер · 17:00": {
+      "recurrenceRules": []
+    },
+    "node:Вербовщик · 3 мин": {
+      "recurrenceRules": []
+    },
+    "node:Sifariş · 3 мин 8-20": {
+      "recurrenceRules": []
+    },
+    "node:Сканер · 5 мин": {
+      "recurrenceRules": []
+    },
+    "node:Пульс · 10 мин": {
+      "recurrenceRules": []
+    },
+    "node:Kontent · 7:00": {
+      "recurrenceRules": []
+    },
+    "node:Куки · сторож 2ч": {
+      "recurrenceRules": []
+    },
+    "node:Архив · 03:00": {
+      "recurrenceRules": []
+    },
+    "node:TMP · справка триггер": {
+      "recurrenceRules": []
+    },
+    "node:TMP · тариф триггер": {
+      "recurrenceRules": []
+    },
+    "node:TMP · куки-триггер": {
+      "recurrenceRules": []
+    },
+    "node:TMP · inv-trig": {
+      "recurrenceRules": []
+    }
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "6e433a1e-f1c6-412f-9f87-2ddb1e5e1ed9",
+  "activeVersionId": "6e433a1e-f1c6-412f-9f87-2ddb1e5e1ed9",
+  "versionCounter": 33,
+  "triggerCount": 11,
+  "sourceWorkflowId": null,
+  "shared": [
+    {
+      "updatedAt": "2026-07-17T09:30:52.996Z",
+      "createdAt": "2026-07-17T09:30:52.996Z",
+      "role": "workflow:owner",
+      "workflowId": "YKDeJegcr2Nwbulq",
+      "projectId": "Nm0qdv1cEJeylopq",
+      "project": {
+        "updatedAt": "2026-07-06T09:51:04.588Z",
+        "createdAt": "2026-07-06T09:41:10.020Z",
+        "id": "Nm0qdv1cEJeylopq",
+        "name": "Huseyn Khalilzade <huseynalin962@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "c027c081-ca99-4561-86b8-9a2559f04724"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-07-19T07:51:09.109Z",
+    "createdAt": "2026-07-19T07:51:09.109Z",
+    "versionId": "6e433a1e-f1c6-412f-9f87-2ddb1e5e1ed9",
+    "workflowId": "YKDeJegcr2Nwbulq",
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "triggerAtHour": 7
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          -256,
+          2112
+        ],
+        "id": "4be41768-cdaa-482a-bfd7-51f3a997ed84",
+        "name": "Пуш утро · 7:00"
+      },
+      {
+        "parameters": {
+          "url": "https://api.open-meteo.com/v1/forecast?latitude=40.4093&longitude=49.8671&current=temperature_2m,weather_code&daily=temperature_2m_max&forecast_days=1&timezone=Asia%2FBaku",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          0,
+          2112
+        ],
+        "id": "026282a3-902e-4378-85d2-556bd5b71561",
+        "name": "Пуш утро · погода"
+      },
+      {
+        "parameters": {
+          "jsCode": "const text = $input.first().json.content[0].text;\nconst fs = require('fs');\nfs.writeFileSync('/home/node/.n8n/milli/pending_push.txt', text, 'utf8');\nreturn [{ json: { draftText: text, slot: 'səhər' } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          528,
+          2112
+        ],
+        "id": "d437f051-be61-4e10-b1de-e40ead12fc84",
+        "name": "Пуш утро · черновик"
+      },
+      {
+        "parameters": {
+          "chatId": "8309087590",
+          "text": "={{ '🌅 ЧЕРНОВИК (утро):\\n\\n' + $json.draftText + '\\n\\nƏgər hər şey yaxşıdırsa — cavab yaz: Ok' }}",
+          "additionalFields": {
+            "appendAttribution": false
+          },
+          "options": {
+            "appendAttribution": false
+          }
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          784,
+          2112
+        ],
+        "id": "3dfd87be-0e4d-4988-ac97-8c046d95cbdf",
+        "name": "Пуш утро · мне",
+        "webhookId": "d992060e-110c-4de9-97a0-dd6840e92ee6",
+        "credentials": {
+          "telegramApi": {
+            "id": "qbHB49SQFhw6T0QT",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://browserless:3000/function?token=milli2026browser",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "code",
+                "value": "=export default async function ({ page, context }) { const msgText = context.pendingText || 'Salam!'; const log = { errors: [] }; try { await page.goto('https://login.uptaxi.ru/', { waitUntil: 'networkidle2', timeout: 60000 }); await new Promise(r => setTimeout(r, 2500)); await page.type('input[name=firm_id]', '1165', { delay: 60 }); await page.type('input[name=login]', 'MilliBot', { delay: 60 }); await page.type('input[name=password]', 'Leylusa0618', { delay: 60 }); const captchaVisible = await page.evaluate(() => { const c = document.querySelector('input[name=code]'); if (!c) return false; const r = c.getBoundingClientRect(); return r.width > 0 && r.height > 0; }); if (captchaVisible) { return { data: JSON.stringify({ stopped: 'CAPTCHA' }), type: 'application/json' }; } await page.evaluate(() => { const cb = document.querySelector('input[name=cabinet]'); if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); } }); await new Promise(r => setTimeout(r, 500)); await page.evaluate(() => { const btn = document.querySelector('input[type=submit], button[type=submit]'); if (btn) btn.click(); }); await new Promise(r => setTimeout(r, 9000)); if (!page.url().includes('upphone.ru')) { return { data: JSON.stringify({ stopped: 'LOGIN_FAILED' }), type: 'application/json' }; } } catch(e) { log.errors.push('LOGIN'); return { data: JSON.stringify(log), type: 'application/json' }; } try { await page.goto('https://1165.upphone.ru:4422/web/cab/1165/operations/send-messages/create/', { waitUntil: 'networkidle2', timeout: 60000 }); await new Promise(r => setTimeout(r, 6000)); } catch(e) { log.errors.push('NAV'); return { data: JSON.stringify(log), type: 'application/json' }; } try { await page.evaluate(() => { const selects = document.querySelectorAll('select'); for (const sel of selects) { for (const opt of sel.options) { if (opt.text.toUpperCase().includes('PUSH')) { sel.value = opt.value; sel.dispatchEvent(new Event('change', { bubbles: true })); return true; } } } }); } catch(e) {} await new Promise(r => setTimeout(r, 4000)); let sentTo = 0; try { sentTo = await page.evaluate(() => { const jq = window.$; jq('#rows-table').jqxGrid('clearselection'); const rows = jq('#rows-table').jqxGrid('getrows'); rows.forEach(r => { jq('#rows-table').jqxGrid('selectrow', r.uid); }); return rows.length; }); } catch(e) { log.errors.push('SELECT'); } await new Promise(r => setTimeout(r, 2000)); try { await page.evaluate((txt) => { const ta = document.querySelector('textarea[data-name=message]'); if (ta) { ta.focus(); ta.value = txt; ta.dispatchEvent(new Event('input', { bubbles: true })); ta.dispatchEvent(new Event('change', { bubbles: true })); } }, msgText); } catch(e) { log.errors.push('FILL'); } await new Promise(r => setTimeout(r, 1000)); try { const sendBtn = await page.$('#send-message'); if (sendBtn) { await page.evaluate(e => e.click(), sendBtn); } } catch(e) { log.errors.push('SEND'); } await new Promise(r => setTimeout(r, 4000)); return { data: JSON.stringify({ success: true, sentTo: sentTo, errors: log.errors }), type: 'application/json' }; }"
+              },
+              {
+                "name": "context",
+                "value": "={{ { pendingText: $json.safeText } }}"
+              }
+            ]
+          },
+          "options": {
+            "timeout": 120000
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          528,
+          1632
+        ],
+        "id": "583aac14-dc43-4d8d-96fc-cfd018c1b348",
+        "name": "Мозг · рассылка всем"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\ntry { fs.unlinkSync('/home/node/.n8n/milli/pending_push.txt'); } catch(e) {}\nreturn [{ json: { cleared: true } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          784,
+          1632
+        ],
+        "id": "1b99e68c-990e-4f5c-9845-1a0e5b7485db",
+        "name": "Мозг · очистить черновик"
+      },
+      {
+        "parameters": {
+          "chatId": "8309087590",
+          "text": "={{ '✅ Göndərildi! Sürücülərə çatdı.' }}",
+          "additionalFields": {
+            "appendAttribution": false
+          },
+          "options": {
+            "appendAttribution": false
+          }
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1040,
+          1632
+        ],
+        "id": "82945126-e8fa-4739-975b-9442a6785ec0",
+        "name": "Мозг · готово",
+        "webhookId": "8e89b1e3-12d8-41d0-8234-5cc4436815fa",
+        "credentials": {
+          "telegramApi": {
+            "id": "qbHB49SQFhw6T0QT",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "triggerAtHour": 13
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          -256,
+          2304
+        ],
+        "id": "8d7eed7e-d232-43c0-9e11-eac82824e602",
+        "name": "Пуш обед · 13:00"
+      },
+      {
+        "parameters": {
+          "jsCode": "const text = $input.first().json.content[0].text;\nconst fs = require('fs');\nfs.writeFileSync('/home/node/.n8n/milli/pending_push.txt', text, 'utf8');\nreturn [{ json: { draftText: text, slot: 'nahar' } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          528,
+          2304
+        ],
+        "id": "8433d169-7441-404a-aa21-d8fa9a283549",
+        "name": "Пуш обед · черновик"
+      },
+      {
+        "parameters": {
+          "chatId": "8309087590",
+          "text": "={{ '🍽️ ЧЕРНОВИК (обед):\\n\\n' + $json.draftText + '\\n\\nƏgər hər şey yaxşıdırsa — cavab yaz: Ok' }}",
+          "additionalFields": {
+            "appendAttribution": false
+          },
+          "options": {
+            "appendAttribution": false
+          }
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          784,
+          2304
+        ],
+        "id": "11dd6431-220f-4c65-8bdb-d2fb13079490",
+        "name": "Пуш обед · мне",
+        "webhookId": "46adfa1e-cc04-4d6d-beb6-b8b4cc28a9f9",
+        "credentials": {
+          "telegramApi": {
+            "id": "qbHB49SQFhw6T0QT",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const raw = $input.first().json.pendingText;\n\n// 1. Пустой черновик — не рассылаем ничего\nif (!raw || typeof raw !== 'string' || !raw.trim()) {\n  throw new Error('STOP: черновик пустой. Рассылка отменена.');\n}\n\nconst safe = raw.replace(/\\r\\n/g, '\\n').trim();\n\n// 2. Кириллица = мусор. Водителям пишем только на азербайджанском.\nif (/[А-Яа-яЁё]/.test(safe)) {\n  const found = (safe.match(/[А-Яа-яЁё]+/g) || []).slice(0, 5).join(' ');\n  throw new Error('STOP: в черновике кириллица (\"' + found + '\"). Рассылка отменена.');\n}\n\n// 3. Служебный мусор: арифметика вида \"22 % 12 = 10\", годы 20xx\nif (/\\d+\\s*%\\s*\\d+\\s*=\\s*\\d+/.test(safe)) {\n  throw new Error('STOP: в черновике арифметика. Рассылка отменена.');\n}\n\n// 4. Подозрительно короткий текст\nif (safe.length < 15) {\n  throw new Error('STOP: черновик слишком короткий (' + safe.length + ' симв.). Рассылка отменена.');\n}\n\n// 5. Подозрительно длинный (шаблон + погода ~ 200 симв.)\nif (safe.length > 400) {\n  throw new Error('STOP: черновик слишком длинный (' + safe.length + ' симв.). Рассылка отменена.');\n}\n\nreturn [{ json: { safeText: safe } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          272,
+          1632
+        ],
+        "id": "51766f8f-4753-4d83-8583-0e86a9f10fe9",
+        "name": "Мозг · очистка текста"
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "triggerAtHour": 17
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          -256,
+          2512
+        ],
+        "id": "d2142ed9-6560-4074-b492-df2e4aede973",
+        "name": "Пуш вечер · 17:00"
+      },
+      {
+        "parameters": {
+          "chatId": "8309087590",
+          "text": "={{ '🌆 ЧЕРНОВИК (вечер):\\n\\n' + $json.draftText + '\\n\\nƏgər hər şey yaxşıdırsa — cavab yaz: ok' }}",
+          "additionalFields": {
+            "appendAttribution": false
+          },
+          "options": {
+            "appendAttribution": false
+          }
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          528,
+          2512
+        ],
+        "id": "4bf2c8c3-5fa0-48e2-8026-fb2addeedaa3",
+        "name": "Пуш вечер · мне",
+        "webhookId": "ea4d04cc-636b-487c-867b-46bc426a25a6",
+        "credentials": {
+          "telegramApi": {
+            "id": "qbHB49SQFhw6T0QT",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const text = $input.first().json.content[0].text;\nconst fs = require('fs');\nfs.writeFileSync('/home/node/.n8n/milli/pending_push.txt', text, 'utf8');\nreturn [{ json: { draftText: text, slot: 'axsam' } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          272,
+          2512
+        ],
+        "id": "5cad5eb3-9802-4026-8464-c1d32b62adbe",
+        "name": "Пуш вечер · черновик"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Реальные данные из узла погоды\nconst j = $input.first().json || {};\nconst cur = j.current || {};\nconst day = j.daily || {};\nlet T = null, TMAX = null;\nconst t = Number(cur.temperature_2m);\nif (isFinite(t) && t > -40 && t < 60) T = Math.round(t);\nconst arr = day.temperature_2m_max;\nif (Array.isArray(arr) && isFinite(Number(arr[0]))) {\n  const m = Math.round(Number(arr[0]));\n  if (m > -40 && m < 60) TMAX = m;\n}\nif (T !== null && TMAX !== null && TMAX < T) TMAX = T;\nconst HOT = TMAX !== null && TMAX >= 30;\n\nfunction pick(list) {\n  const ok = list.filter(function (x) {\n    if (x.needT && T === null) return false;\n    if (x.needMax && TMAX === null) return false;\n    if (x.hotOnly && !HOT) return false;\n    return true;\n  });\n  const nowBaku = new Date(Date.now() + 4 * 3600 * 1000);\n  const start = Date.UTC(nowBaku.getUTCFullYear(), 0, 0);\n  const doy = Math.floor((nowBaku.getTime() - start) / 86400000);\n  const chosen = ok[doy % ok.length];\n  return chosen.t.replace(/\\{T\\}/g, String(T)).replace(/\\{TMAX\\}/g, String(TMAX));\n}\n\nconst text = pick([\n { t:\"Axşamınız xeyir!\\n🌆 Şəhərdə hərəkət artır, bir çox insan evə tələsir. Bu saatlar adətən günün ən aktiv sifariş vaxtlarından biridir.\\n🚖 Təhlükəsiz sürüş və bol sifarişlər arzulayırıq!\" },\n { t:\"Axşamınız xeyir!\\n✨ Gün hələ bitməyib. Qarşıda yeni sifarişlər və əlavə qazanc üçün yaxşı fürsətlər var.\\n🚖 Uğurlu axşam və bol qazanc arzulayırıq!\" },\n { t:\"Axşamınız xeyir!\\n💧 Uzun iş günündən sonra özünüzə də diqqət ayırmağı unutmayın. İmkan olduqca dincəlin, su için və ehtiyac hiss edirsinizsə, qısa fasilə verin.\\n🚖 Təhlükəsiz yollar və uğurlu sifarişlər arzulayırıq!\" },\n { t:\"Axşamınız xeyir!\\n🙏 Bu gün sərnişinlərə göstərdiyiniz xidmət və əməyiniz üçün təşəkkür edirik.\\nHər uğurlu səfər Milli Taksi-yə olan etibarı daha da gücləndirir.\\n🚖 Sizə sakit, təhlükəsiz və bərəkətli axşam arzulayırıq!\" },\n { t:\"Axşamınız xeyir!\\nBəzən günün ən yaxşı sifarişləri məhz axşam saatlarında gəlir.\\n🌟 Günü uğurla tamamlamaq üçün qarşıda hələ gözəl imkanlar var.\\n🚖 Təhlükəsiz sürün, bol qazanın və evinizə xoş əhval-ruhiyyə ilə qayıdın!\" }\n]);\n\nif (/[а-яА-ЯёЁ]/.test(text)) {\n  text = \"🚖 Sabahınız xeyir! Yolunuz açıq, qazancınız bol olsun. Uğurlar!\";\n}\nreturn [{ json: { content: [{ type: \"text\", text: text }] } }];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          0,
+          2512
+        ],
+        "id": "1611cb5a-bc23-442c-9df7-a9ec4fa95bcd",
+        "name": "Пуш вечер · шаблон"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Реальные данные из узла погоды\nconst j = $input.first().json || {};\nconst cur = j.current || {};\nconst day = j.daily || {};\nlet T = null, TMAX = null;\nconst t = Number(cur.temperature_2m);\nif (isFinite(t) && t > -40 && t < 60) T = Math.round(t);\nconst arr = day.temperature_2m_max;\nif (Array.isArray(arr) && isFinite(Number(arr[0]))) {\n  const m = Math.round(Number(arr[0]));\n  if (m > -40 && m < 60) TMAX = m;\n}\nif (T !== null && TMAX !== null && TMAX < T) TMAX = T;\nconst HOT = TMAX !== null && TMAX >= 30;\n\nfunction pick(list) {\n  const ok = list.filter(function (x) {\n    if (x.needT && T === null) return false;\n    if (x.needMax && TMAX === null) return false;\n    if (x.hotOnly && !HOT) return false;\n    return true;\n  });\n  const nowBaku = new Date(Date.now() + 4 * 3600 * 1000);\n  const start = Date.UTC(nowBaku.getUTCFullYear(), 0, 0);\n  const doy = Math.floor((nowBaku.getTime() - start) / 86400000);\n  const chosen = ok[doy % ok.length];\n  return chosen.t.replace(/\\{T\\}/g, String(T)).replace(/\\{TMAX\\}/g, String(TMAX));\n}\n\nconst text = pick([\n { t:\"Hər qəbul etdiyiniz sifariş sərnişinlərin Milli Taksi-yə olan etibarını artırır. Birlikdə daha güclü xidmət yaradırıq.\\n🚖 Hər kəsə uğurlu iş günü və bol qazanc arzulayırıq!\" },\n { t:\"Bir çox sərnişin məhz bu saatlarda taksi sifariş edir. Onlayn olan sürücülər isə daha çox sifariş qəbul edir.\\n🚖 Fürsəti qaçırmayın. Uğurlu və bol qazanc arzulayırıq!\" },\n { hotOnly:1, needT:1, t:\"🌡️ Hazırda Bakıda hava {T}°C-dir, isti olaraq qalır. Özünüzü də unutmayın — imkan olduqca su için, qısa fasilələr edin və avtomobildə sərinliyi qoruyun.\\n🚖 Rahat iş günü və bol sifarişlər arzulayırıq!\" },\n { t:\"Günün ən aktiv saatları davam edir. Hələ də onlayn deyilsinizsə, indi qoşulmaq üçün əla vaxtdır.\\n🚖 Sifarişlər sizi gözləyir. Uğurlu və bol qazanc arzulayırıq!\" }\n]);\n\nif (/[а-яА-ЯёЁ]/.test(text)) {\n  text = \"🚖 Sabahınız xeyir! Yolunuz açıq, qazancınız bol olsun. Uğurlar!\";\n}\nreturn [{ json: { content: [{ type: \"text\", text: text }] } }];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          272,
+          2304
+        ],
+        "id": "21b37026-db1e-4052-90f8-708df26b101c",
+        "name": "Пуш обед · шаблон"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Реальные данные из узла погоды\nconst j = $input.first().json || {};\nconst cur = j.current || {};\nconst day = j.daily || {};\nlet T = null, TMAX = null;\nconst t = Number(cur.temperature_2m);\nif (isFinite(t) && t > -40 && t < 60) T = Math.round(t);\nconst arr = day.temperature_2m_max;\nif (Array.isArray(arr) && isFinite(Number(arr[0]))) {\n  const m = Math.round(Number(arr[0]));\n  if (m > -40 && m < 60) TMAX = m;\n}\nif (T !== null && TMAX !== null && TMAX < T) TMAX = T;\nconst HOT = TMAX !== null && TMAX >= 30;\n\nfunction pick(list) {\n  const ok = list.filter(function (x) {\n    if (x.needT && T === null) return false;\n    if (x.needMax && TMAX === null) return false;\n    if (x.hotOnly && !HOT) return false;\n    return true;\n  });\n  const nowBaku = new Date(Date.now() + 4 * 3600 * 1000);\n  const start = Date.UTC(nowBaku.getUTCFullYear(), 0, 0);\n  const doy = Math.floor((nowBaku.getTime() - start) / 86400000);\n  const chosen = ok[doy % ok.length];\n  return chosen.t.replace(/\\{T\\}/g, String(T)).replace(/\\{TMAX\\}/g, String(TMAX));\n}\n\nconst text = pick([\n { needT:1, needMax:1, hotOnly:1, t:\"Sabahınız xeyir, gününüz uğurlu olsun!\\n🌤️ Hazırda Bakıda hava {T}°C-dir. Gün ərzində temperaturun {TMAX}°C-yə qədər yüksəlməsi gözlənilir.\\n❄️ Kondisionerinizi əvvəlcədən işə salın, avtomobildə sərin su saxlayın və günü xoş əhval-ruhiyyə ilə başlayın.\\n🚖 Sizə təhlükəsiz yol, bol sifariş və uğurlu qazanc arzulayırıq!\" },\n { hotOnly:1, t:\"Sabahınız xeyir, gününüz uğurlu olsun!\\n☀️ İsti hava artıq özünü göstərir. Öz rahatlığınızı düşünün: avtomobili sərin saxlayın, suyunuzu yanınızdan əskik etməyin və özünüzə diqqət ayırın.\\n😊 Yaxşı əhval isə sərnişinlərə də ötürülür.\\n🚖 Uğurlu və bərəkətli gün arzulayırıq!\" },\n { t:\"Sabahınız xeyir, gününüz uğurlu olsun!\\nHər yeni gün yeni imkan deməkdir.\\n✨ Bir təbəssüm, səliqəli avtomobil və nəzakətli münasibət gününüzü daha uğurlu edə bilər.\\n🚖 Bu gün sizə bol sifariş və yüksək əhval arzulayırıq!\" },\n { needMax:1, hotOnly:1, t:\"Sabahınız xeyir, gününüz uğurlu olsun!\\n🌡️ Bu gün Bakıda temperatur {TMAX}°C-yə qədər yüksələ bilər.\\n❄️ Sərin salon, təmiz avtomobil və gülərüz xidmət həm sizin, həm də sərnişinləriniz üçün rahat səyahət deməkdir.\\n🚖 Gözəl gün və bol qazanc arzulayırıq!\" },\n { needT:1, needMax:1, t:\"Sabahınız xeyir, gününüz uğurlu olsun!\\n🌤️ Hazırda Bakıda hava {T}°C-dir, gün ərzində {TMAX}°C-yə qədər qalxacaq.\\n😊 Səliqəli avtomobil və gülərüz münasibət gününüzü daha uğurlu edə bilər.\\n🚖 Uğurlu, məhsuldar və bol qazanclı gün arzulayırıq!\" },\n { t:\"Sabahınız xeyir, gününüz uğurlu olsun!\\nHər sifariş yeni bir yol, hər yol isə yeni bir fürsətdir.\\n☀️ Günə inamla başlayın, təhlükəsiz sürün və hər kilometrdən zövq alın.\\n🚖 Uğurlu, məhsuldar və bol qazanclı gün arzulayırıq!\" }\n]);\n\nif (/[а-яА-ЯёЁ]/.test(text)) {\n  text = \"🚖 Sabahınız xeyir! Yolunuz açıq, qazancınız bol olsun. Uğurlar!\";\n}\nreturn [{ json: { content: [{ type: \"text\", text: text }] } }];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          272,
+          2112
+        ],
+        "id": "86ea2ebe-75c6-4645-932e-b98d8c1ed646",
+        "name": "Пуш утро · шаблон"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\nconst file = '/home/node/.n8n/milli/driver_positions.json';\nlet store;\ntry {\n  store = JSON.parse(fs.readFileSync(file, 'utf8'));\n} catch (e) {\n  return [{ json: { positions: [], updated: null, error: 'no positions file: ' + String(e) } }];\n}\nreturn [{ json: {\n  positions: store.drivers || [],\n  updated: store.updated || null\n} }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          0,
+          1312
+        ],
+        "id": "c7e1d226-39d3-4a00-a210-175793606d2a",
+        "name": "Вербовщик · позиции"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://browserless:3000/function?token=milli2026browser",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ code: `\nexport default async function ({ page, context }) {\n  const log = { steps: [], ok: false, sent: [], errors: [] };\n  const positions = context.positions || [];\n  const posAgeMin = context.updated ? Math.round((Date.now() - new Date(context.updated).getTime())/60000) : -1;\n  const TEST_CHAT_ID = 5;\n  const COMMISSION = 0.10, R1 = 4, R2 = 5, TOP_N = 5;\n\n  function distKm(la1,ln1,la2,ln2){\n    const R=6371,dLa=(la2-la1)*Math.PI/180,dLn=(ln2-ln1)*Math.PI/180;\n    const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLn/2)**2;\n    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));\n  }\n  function firstName(f){ if(!f) return 'sürücü'; const w=String(f).trim().split(/\\\\s+/)[0]; return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase(); }\n  function sDA(w){ const b='aıou',v=(String(w).toLowerCase().match(/[aıoueəiöü]/g))||[],l=v.length?v[v.length-1]:'a'; return b.includes(l)?'da':'də'; }\n  function sDAN(w){ return sDA(w)==='da'?'dan':'dən'; }\n  function sA(w){ const b='aıou',v=(String(w).toLowerCase().match(/[aıoueəiöü]/g))||[],l=v.length?v[v.length-1]:'a'; return b.includes(l)?'a':'ə'; }\n\n  try {\n    await page.setCookie({ name:'cabinetUpTaxi', value: context.cookie, domain:'1165.upphone.ru', path:'/', httpOnly:false, secure:false });\n\n    await page.goto('https://1165.upphone.ru:4422/web/cab/1165/monitoring/orders', { waitUntil:'networkidle2', timeout:60000 });\n    if (page.url().includes('login.uptaxi.ru')) { log.reason='COOKIE DEAD'; return { data: JSON.stringify(log), type:'application/json' }; }\n\n    await new Promise(r=>setTimeout(r,4000));\n\n    // Берём первый горящий заказ без назначенного водителя\n    const order = await page.evaluate(() => {\n      try {\n        const rows = window.$('#orders-table').jqxGrid('getrows');\n        if (!rows || !rows.length) return null;\n        const burning = rows.filter(r => String(r.status).toLowerCase().includes('burn') && (!r.pozivnoi || r.pozivnoi===''));\n        const pick = burning.length ? burning[0] : rows[0];\n        const flat = {};\n        for (const k of Object.keys(pick)) { const v=pick[k]; if(v===null||['string','number','boolean'].includes(typeof v)) flat[k]=v; }\n        return flat;\n      } catch(e){ return { err:String(e) }; }\n    });\n\n    if (!order) { log.ok=true; log.verdict='Доска пуста — заказов нет сейчас'; return { data: JSON.stringify(log), type:'application/json' }; }\n    log.orderRaw = order;\n\n    // Пытаемся вытащить координаты подачи из разных возможных полей\n    let oLat=null, oLng=null;\n    const latKeys=['lat','from_lat','otkuda_lat','lat_a','latitude'];\n    const lngKeys=['lng','lon','from_lng','otkuda_lng','lng_a','longitude'];\n    for (const k of latKeys){ if(order[k]!=null && !isNaN(parseFloat(order[k]))){ oLat=parseFloat(order[k]); break; } }\n    for (const k of lngKeys){ if(order[k]!=null && !isNaN(parseFloat(order[k]))){ oLng=parseFloat(order[k]); break; } }\n    log.coordsSource = (oLat!=null&&oLng!=null) ? 'из полей заказа' : 'координат в заказе НЕТ';\n\n    if (oLat==null || oLng==null) {\n      // координат нет — показываем поля заказа, чтобы понять, где точка. Не шлём.\n      log.ok=true;\n      log.verdict='Заказ найден, но координат подачи нет в полях. Смотри orderRaw — определим, откуда брать точку. Ничего не отправлено.';\n      return { data: JSON.stringify(log), type:'application/json' };\n    }\n\n    // считаем топ-5\n    const zone = order.otkuda || order.zona || order.tarif || 'sifariş';\n    const to = order.kuda || '';\n    const price = parseFloat(order.price || order.summa || 0) || 0;\n    const net = (price*(1-COMMISSION)).toFixed(2);\n\n    const withDist = positions\n      .filter(d=>typeof d.lat==='number'&&typeof d.lng==='number')\n      .map(d=>({ id:d.id, pozivnoi:d.pozivnoi, name:d.name, km:Math.round(distKm(oLat,oLng,d.lat,d.lng)*100)/100 }))\n      .sort((a,b)=>a.km-b.km);\n    let picked = withDist.filter(d=>d.km<=R1).slice(0,TOP_N);\n    if (picked.length<TOP_N) picked = withDist.filter(d=>d.km<=R2).slice(0,TOP_N);\n    log.picked = picked;\n\n    if (!picked.length) { log.ok=true; log.verdict='Заказ есть, но рядом (5км) никого. Позиции '+posAgeMin+' мин.'; return { data: JSON.stringify(log), type:'application/json' }; }\n\n    // строим сообщения (в тесте все → id5, с пометкой кому)\n    const zTxt = String(zone);\n    const messages = picked.map(d=>{\n      const nm=firstName(d.name);\n      const body = nm+' bəy salam. '+zTxt+sDA(zTxt)+' bir sifariş var, qəbul edərsiniz? '+\n        (to?(String(zone)+sDAN(zTxt)+' '+String(to)+sA(String(to))+' gedəcək, '):'')+\n        'qiyməti '+price+' manatdı. Komissiyanı çıxanda '+net+' edir. '+\n        'Yaxında sürücü olmadığı üçün sizə yazdım, ən yaxın sürücü sizsiniz.';\n      return { poz:d.pozivnoi, text:'[TEST → '+d.pozivnoi+' | '+d.km+'km] '+body };\n    });\n\n    // отправляем в чат id5\n    await page.goto('https://1165.upphone.ru:4422/web/cab/1165/directory/drivers/id/'+TEST_CHAT_ID+'/chat', { waitUntil:'networkidle2', timeout:60000 });\n    await page.waitForSelector('input[name=message]', { timeout:15000 });\n    for (const m of messages) {\n      try {\n        await page.click('input[name=message]', { clickCount:3 });\n        await page.type('input[name=message]', m.text, { delay:20 });\n        await page.click('button#send-chat-message');\n        await new Promise(r=>setTimeout(r,1500));\n        log.sent.push(m.poz);\n      } catch(e){ log.errors.push(m.poz+':'+String(e).slice(0,40)); }\n    }\n\n    log.ok=true;\n    log.verdict='Заказ '+zone+(to?(' → '+to):'')+' '+price+'₼. Рядом '+picked.length+', отправлено в id5: '+log.sent.length+'. Позиции '+posAgeMin+'мин';\n    return { data: JSON.stringify(log), type:'application/json' };\n\n  } catch (e) {\n    log.error = String(e);\n    return { data: JSON.stringify(log), type:'application/json' };\n  }\n}\n`, context: { cookie: $json.cookie, positions: $json.positions, updated: $json.updated } }) }}",
+          "options": {
+            "timeout": 300000
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          528,
+          1312
+        ],
+        "id": "d818945e-0b7a-4ea0-9cda-81ca4e52f23e",
+        "name": "Вербовщик · отправка (ТЕСТ id5)"
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "minutes",
+                "minutesInterval": 3
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          -256,
+          1312
+        ],
+        "id": "e84733f9-7658-4815-b893-2004024866eb",
+        "name": "Вербовщик · 3 мин"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\nconst DIR = '/home/node/.n8n/milli';\nconst SENT = DIR + '/sifaris_sent_orders.json';\n\nlet sent = [];\ntry {\n  if (fs.existsSync(SENT)) {\n    const arr = JSON.parse(fs.readFileSync(SENT, 'utf8'));\n    if (Array.isArray(arr)) sent = arr;\n  }\n} catch (e) {}\n\nconst dayAgo = Date.now() - 24 * 60 * 60 * 1000;\nsent = sent.filter(x => x && x.ts && x.ts > dayAgo);\n\nreturn [{\n  json: {\n    skipIds: sent.map(x => x.id),\n    sentTodayCount: sent.length\n  }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          0,
+          800
+        ],
+        "id": "099708c8-0379-484e-ac0c-b179541bc944",
+        "name": "Sifariş · память"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\nconst DIR = '/home/node/.n8n/milli';\nconst SENT = DIR + '/sifaris_sent_orders.json';\n\nlet raw = $input.first().json;\nlet payload = {};\ntry {\n  payload = typeof raw.data === 'string' ? JSON.parse(raw.data) : (raw.data || raw);\n} catch (e) {\n  payload = {};\n}\n\nconst pushed = Array.isArray(payload.pushed) ? payload.pushed : [];\n\nif (pushed.length) {\n  let sent = [];\n  try {\n    if (fs.existsSync(SENT)) {\n      const arr = JSON.parse(fs.readFileSync(SENT, 'utf8'));\n      if (Array.isArray(arr)) sent = arr;\n    }\n  } catch (e) {}\n\n  const dayAgo = Date.now() - 24 * 60 * 60 * 1000;\n  sent = sent.filter(x => x && x.ts && x.ts > dayAgo);\n\n  pushed.forEach(p => sent.push({ id: p.id, ts: Date.now(), zone: p.zone, price: p.price }));\n\n  try {\n    if (!fs.existsSync(DIR)) fs.mkdirSync(DIR, { recursive: true });\n    fs.writeFileSync(SENT, JSON.stringify(sent), 'utf8');\n  } catch (e) {}\n}\n\nreturn [{\n  json: {\n    pushCount: pushed.length,\n    pushed: pushed,\n    ordersSeen: (payload.seen || []).length,\n    cycles: payload.cycles,\n    errors: payload.errors || []\n  }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          784,
+          800
+        ],
+        "id": "040cffb3-9d45-4b8b-b99d-c792a5b2ccaf",
+        "name": "Sifariş · отметка"
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "*/3 8-20 * * *"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          -256,
+          800
+        ],
+        "id": "6df84703-a532-4ca6-810b-cfaa2819e7b6",
+        "name": "Sifariş · 3 мин 8-20"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://browserless:3000/function?token=milli2026browser",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ code: \"export default async function ({ page, context }) { const out = { cycles: 0, seen: [], found: [], pushed: [], errors: [] }; const ck = context.cookie; const skip = {}; (context.skipIds || []).forEach(id => { skip[String(id)] = true; }); const MIN_AGE = 10; const CYCLES = 16; const STEP = 8000; const MIN_OK = 2400; const MAX_OK = 3600; function ageSec(t) { const m = String(t || '').match(/(\\\\d+):(\\\\d+):(\\\\d+)/); if (!m) return 0; return Number(m[1])*3600 + Number(m[2])*60 + Number(m[3]); } function cleanAddr(s) { s = String(s || '').trim(); if (/^координаты|^\\\\(?\\\\d{1,3}\\\\.\\\\d{3}/.test(s)) return 'Bakı'; const part = s.split(',')[0].trim(); return part || 'Bakı'; } try { await page.setCookie({ name: 'cabinetUpTaxi', value: ck, domain: '1165.upphone.ru', path: '/', httpOnly: false, secure: false }); } catch (e) { out.errors.push('SETCOOKIE: ' + e.message); } let board; try { board = page; await board.goto('https://1165.upphone.ru:4422/web/cab/1165/monitoring/orders', { waitUntil: 'networkidle2', timeout: 60000 }); await new Promise(r => setTimeout(r, 3500)); if (board.url().indexOf('login.uptaxi.ru') >= 0) { out.errors.push('COOKIE_EXPIRED'); return { data: JSON.stringify(out), type: 'application/json' }; } } catch (e) { out.errors.push('NAV: ' + e.message); return { data: JSON.stringify(out), type: 'application/json' }; } let form = null; try { form = await page.browser().newPage(); await form.setCookie({ name: 'cabinetUpTaxi', value: ck, domain: '1165.upphone.ru', path: '/', httpOnly: false, secure: false }); await form.goto('https://1165.upphone.ru:4422/web/cab/1165/operations/send-messages/create/', { waitUntil: 'networkidle2', timeout: 45000 }); await new Promise(r => setTimeout(r, 3500)); await form.evaluate(() => { const sels = document.querySelectorAll('select'); for (const s of sels) { for (const o of s.options) { if ((o.text || '').toUpperCase().indexOf('PUSH') >= 0) { s.value = o.value; s.dispatchEvent(new Event('change', { bubbles: true })); return; } } } }); await new Promise(r => setTimeout(r, 5000)); } catch (e) { out.errors.push('FORM_INIT: ' + e.message); } async function sendPush(o) { const zone = cleanAddr(o.otkuda); const text = '🚖 ' + zone + ' · ' + o.price + ' ₼'; const rec = { id: o.id, age: ageSec(o.time), zone: zone, price: o.price, text: text }; if (!form) { out.errors.push('NO_FORM_' + o.id); return; } try { const sel = await form.evaluate(() => { const jq = window.$; jq('#rows-table').jqxGrid('clearselection'); const rr = jq('#rows-table').jqxGrid('getrows') || []; let n = 0; rr.forEach(r => { const tok = !!(r.token_firebase && String(r.token_firebase).length > 20); if (tok) { jq('#rows-table').jqxGrid('selectrow', r.uid); n++; } }); const s = jq('#rows-table').jqxGrid('getselectedrowindexes') || []; return { selected: s.length }; }); if (sel.selected < MIN_OK || sel.selected > MAX_OK) { out.errors.push('ABORT_' + o.id + '_selected' + sel.selected); return; } await form.evaluate((txt) => { const ta = document.querySelector('textarea[data-name=message]'); if (ta) { ta.focus(); ta.value = txt; ta.dispatchEvent(new Event('input', { bubbles: true })); ta.dispatchEvent(new Event('change', { bubbles: true })); } }, text); await new Promise(r => setTimeout(r, 400)); const re = await form.evaluate(() => { const jq = window.$; return (jq('#rows-table').jqxGrid('getselectedrowindexes') || []).length; }); if (re < MIN_OK || re > MAX_OK) { out.errors.push('RECHECK_' + o.id + '_' + re); return; } await form.evaluate(() => { const b = document.querySelector('#send-message'); if (b) b.click(); }); rec.recipients = re; out.pushed.push(rec); await new Promise(r => setTimeout(r, 1800)); } catch (e) { out.errors.push('PUSH_' + o.id + ': ' + e.message); } } const doneThisRun = {}; for (let i = 0; i < CYCLES; i++) { out.cycles++; const cs = Date.now(); let rows = []; try { rows = await board.evaluate(() => { const jq = window.$; let r = []; try { r = jq('#orders-table').jqxGrid('getrows') || []; } catch (e) { return []; } return r.map(x => ({ id: x.id, status: x.status, pozivnoi: x.pozivnoi, time: x.time, price: x.price, otkuda: String(x.otkuda || '').slice(0, 60) })); }); } catch (e) { out.errors.push('READ' + i + ': ' + e.message); } rows.forEach(r => out.seen.push({ cycle: i, id: r.id, status: r.status, pozivnoi: r.pozivnoi, time: r.time })); const hot = rows.filter(r => String(r.status) === 'burning' && !r.pozivnoi && ageSec(r.time) >= MIN_AGE && !skip[String(r.id)] && !doneThisRun[String(r.id)]); for (const o of hot) { doneThisRun[String(o.id)] = true; out.found.push({ id: o.id, age: ageSec(o.time) }); await sendPush(o); } const el = Date.now() - cs; const w = STEP - el; if (i < CYCLES - 1 && w > 0) await new Promise(r => setTimeout(r, w)); } try { if (form) await form.close(); } catch (e) {} return { data: JSON.stringify(out), type: 'application/json' }; }\", context: { cookie: $json.cookie, skipIds: $json.skipIds } }) }}",
+          "options": {
+            "timeout": 300000
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          528,
+          800
+        ],
+        "id": "841f8d0c-1b3f-422b-a6c3-74f2d2ef2ea1",
+        "name": "Sifariş · пуш"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://browserless:3000/function?token=milli2026browser",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ code: `\nexport default async function ({ page, context }) {\n  const log = { steps: [], ok: false, positions: [], nullCount: 0 };\n  const t0 = Date.now();\n  try {\n    await page.setCookie({\n      name: 'cabinetUpTaxi',\n      value: context.cookie,\n      domain: '1165.upphone.ru',\n      path: '/',\n      httpOnly: false,\n      secure: false\n    });\n\n    await page.goto('https://1165.upphone.ru:4422/web/cab/1165/operations/send-messages/create/', { waitUntil: 'networkidle2', timeout: 60000 });\n    if (page.url().includes('login.uptaxi.ru')) {\n      log.reason = 'COOKIE DEAD';\n      return { data: JSON.stringify(log), type: 'application/json' };\n    }\n    await new Promise(r => setTimeout(r, 5000));\n\n    const online = await page.evaluate(() => {\n      try {\n        const rows = window.$('#rows-table').jqxGrid('getrows');\n        return rows\n          .filter(r => r.online == 1 || r.online === true || r.online === '1')\n          .map(r => ({ id: r.id, pozivnoi: r.pozivnoi, name: ((r.i||'') + ' ' + (r.f||'')).trim(), phone: r.phone_number }));\n      } catch (e) { return []; }\n    });\n    log.steps.push('online total = ' + online.length);\n\n    for (const d of online) {\n      const ts = Date.now();\n      try {\n        await page.goto('https://1165.upphone.ru:4422/web/cab/1165/directory/drivers/id/' + d.id + '/track', { waitUntil: 'domcontentloaded', timeout: 20000 });\n        let pos = null;\n        for (let i = 0; i < 5; i++) {\n          pos = await page.evaluate(() => {\n            if (typeof window.coords !== 'undefined' && Array.isArray(window.coords) && window.coords.length) {\n              const last = window.coords[window.coords.length - 1];\n              return { last: last, count: window.coords.length };\n            }\n            return null;\n          });\n          if (pos) break;\n          await new Promise(r => setTimeout(r, 500));\n        }\n        if (pos && pos.last) {\n          log.positions.push({\n            id: d.id, pozivnoi: d.pozivnoi, name: d.name, phone: d.phone,\n            lat: parseFloat(pos.last[0]), lng: parseFloat(pos.last[1]),\n            points: pos.count, ms: Date.now() - ts\n          });\n        } else {\n          log.nullCount++;\n        }\n      } catch (e) {\n        log.nullCount++;\n      }\n      if (Date.now() - t0 > 165000) { log.steps.push('TIME GUARD hit, stopped early'); break; }\n    }\n\n    log.totalMs = Date.now() - t0;\n    log.gotPositions = log.positions.length;\n    log.ok = true;\n    log.verdict = 'Позиций: ' + log.positions.length + ', null: ' + log.nullCount + ', время: ' + Math.round(log.totalMs/1000) + 'сек';\n    return { data: JSON.stringify(log), type: 'application/json' };\n\n  } catch (e) {\n    log.error = String(e);\n    return { data: JSON.stringify(log), type: 'application/json' };\n  }\n}\n`, context: { cookie: $json.cookie } }) }}",
+          "options": {
+            "timeout": 300000
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          272,
+          1056
+        ],
+        "id": "d2091a09-dc4d-4a01-a2cd-873a86258774",
+        "name": "Сканер · сбор"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\nconst dir = '/home/node/.n8n/milli';\n\nlet payload;\ntry {\n  const raw = $input.first().json.data;\n  payload = typeof raw === 'string' ? JSON.parse(raw) : raw;\n} catch (e) {\n  return [{ json: { error: 'cannot parse HTTP output: ' + String(e) } }];\n}\n\nconst positions = Array.isArray(payload.positions) ? payload.positions : [];\nconst clean = positions.filter(p => p.id !== 5 && p.id !== '5');\n\ntry { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}\n\nconst out = { updated: new Date().toISOString(), count: clean.length, drivers: clean };\nconst file = dir + '/driver_positions.json';\ntry {\n  fs.writeFileSync(file, JSON.stringify(out));\n} catch (e) {\n  return [{ json: { error: 'cannot write file: ' + String(e) } }];\n}\n\nreturn [{ json: {\n  ok: true,\n  wrote: clean.length + ' drivers',\n  updated: out.updated,\n  nullFromScan: payload.nullCount,\n  scanTimeSec: Math.round((payload.totalMs||0)/1000)\n} }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          528,
+          1056
+        ],
+        "id": "4fc04319-72ef-46c7-90dc-e3d6088c8213",
+        "name": "Сканер · запись"
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "minutes"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          -256,
+          1056
+        ],
+        "id": "3fc20f3b-87e7-4ff8-b4db-202c2f03b98e",
+        "name": "Сканер · 5 мин"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\nconst dir = '/home/node/.n8n/milli';\nconst file = dir + '/pulse.json';\n\nlet raw = $input.first().json;\nlet payload = raw;\nif (typeof raw.data === 'string') {\n  try { payload = JSON.parse(raw.data); } catch (e) { payload = { parseErr: true, raw: String(raw.data).slice(0, 200) }; }\n}\n\nif (payload.error === 'COOKIE_DEAD') {\n  return [{ json: { ok: false, note: 'COOKIE_DEAD — нужна свежая cookie' } }];\n}\n\nconst s = Array.isArray(payload.stats) && payload.stats.length ? payload.stats[0] : {};\nconst b = payload.board || {};\n\nconst point = {\n  ts: payload.ts,\n  hour: new Date(new Date(payload.ts).getTime() + 4 * 3600 * 1000).toISOString().slice(11, 16),\n  na_linii: s.na_linii !== undefined ? s.na_linii : null,\n  available: s.available !== undefined ? s.available : null,\n  gotov_bez_zakaza: s.gotov_bez_zakaza !== undefined ? s.gotov_bez_zakaza : null,\n  gorit: s.gorit !== undefined ? s.gorit : null,\n  ishem: s.ishem !== undefined ? s.ishem : null,\n  slognost: s.slognost !== undefined ? s.slognost : null,\n  board_total: b.total !== undefined ? b.total : null,\n  board_burning: b.burning !== undefined ? b.burning : null,\n  board_burning_free: b.burningNoDriver !== undefined ? b.burningNoDriver : null\n};\n\ntry { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}\n\nlet arr = [];\ntry { arr = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { arr = []; }\nif (!Array.isArray(arr)) arr = [];\narr.push(point);\n\nconst cut = Date.now() - 8 * 24 * 3600 * 1000;\narr = arr.filter(function (p) { return new Date(p.ts).getTime() > cut; });\n\nfs.writeFileSync(file, JSON.stringify(arr));\n\nreturn [{ json: { ok: true, wrote: point, totalPoints: arr.length } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          528,
+          512
+        ],
+        "id": "7244bd58-b9b9-4ec4-afa1-9eefc67e053d",
+        "name": "Пульс · запись"
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "minutes",
+                "minutesInterval": 10
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          -256,
+          512
+        ],
+        "id": "dca56d13-1c90-4607-8df8-164fe94e57d9",
+        "name": "Пульс · 10 мин"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://browserless:3000/function?token=milli2026browser",
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/javascript",
+          "body": "=export default async function ({ page }) {\n  const out = { ts: new Date().toISOString(), stats: [], board: {} };\n\n  await page.setCookie({\n    name: 'cabinetUpTaxi',\n    value: '{{ $json.cookie }}',\n    domain: '1165.upphone.ru',\n    path: '/',\n    httpOnly: false,\n    secure: false\n  });\n\n  await page.goto('https://1165.upphone.ru:4422/web/cab/1165/monitoring/stats', { waitUntil: 'domcontentloaded', timeout: 45000 });\n  await new Promise(r => setTimeout(r, 6000));\n  if (page.url().indexOf('login.uptaxi.ru') !== -1) {\n    return { data: JSON.stringify({ error: 'COOKIE_DEAD' }), type: 'application/json' };\n  }\n\n  const statsRaw = await page.evaluate(() => {\n    try {\n      const rows = window.$('#grid-table').jqxGrid('getrows') || [];\n      if (!rows.length) return JSON.stringify([]);\n      const L = rows[rows.length - 1];\n      return JSON.stringify([{\n        dt: L.dt,\n        na_linii: Number(L.na_linii),\n        available: Number(L.available),\n        gotov_bez_zakaza: Number(L.gotov_bez_zakaza),\n        gorit: Number(L.gorit),\n        ishem: Number(L.ishem),\n        slognost: Number(L.slognost),\n        slognost2: Number(L.slognost2),\n        v_rabote: Number(L.v_rabote)\n      }]);\n    } catch (e) { return JSON.stringify([]); }\n  });\n  try { out.stats = JSON.parse(statsRaw); } catch (e) { out.stats = []; }\n\n  await page.goto('https://1165.upphone.ru:4422/web/cab/1165/monitoring/orders', { waitUntil: 'domcontentloaded', timeout: 45000 });\n  await new Promise(r => setTimeout(r, 5000));\n\n  const boardRaw = await page.evaluate(() => {\n    try {\n      const rows = window.$('#orders-table').jqxGrid('getrows') || [];\n      let burning = 0, free = 0;\n      rows.forEach(function (r) {\n        if (String(r.status) === 'burning') {\n          burning++;\n          if (!r.pozivnoi) free++;\n        }\n      });\n      return JSON.stringify({ total: rows.length, burning: burning, burningNoDriver: free });\n    } catch (e) { return JSON.stringify({ total: null, burning: null, burningNoDriver: null }); }\n  });\n  try { out.board = JSON.parse(boardRaw); } catch (e) { out.board = {}; }\n\n  return { data: JSON.stringify(out), type: 'application/json' };\n}",
+          "options": {
+            "timeout": 120000
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          272,
+          512
+        ],
+        "id": "88999407-4e99-4295-a700-997fcf32dd7e",
+        "name": "Пульс · снять"
+      },
+      {
+        "parameters": {
+          "jsCode": "// «Тема дня» — выбор темы, зоны и фактов. Выбор из списков = работа Code (урок 11.2).\nconst w = $input.first().json;\nlet tempC = null;\ntry { tempC = Math.round(w.current.temperature_2m); } catch (e) {}\n\nconst now = new Date();\nconst baku = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Baku' }));\nconst doy = Math.floor((baku - new Date(baku.getFullYear(), 0, 0)) / 86400000);\n\nconst pillars = [\n  { id: 'humor', hint: 'Yumor: gündəlik taksi/Bakı səhnəsi. Yüngül ton, emoji olar. Qiymət yazma.' },\n  { id: 'value', hint: 'Praktik fayda: sürətli çatma, sabit qiymət 3.50 manatdan, tətbiqi yüklə.' },\n  { id: 'local', hint: 'Bakı yayı / istisi: yay ovqatı, kondisionerli maşında sərinlik.' },\n];\nconst pillar = pillars[doy % pillars.length];\n\nconst zones = ['Binəqədi','Yasamal','Sabunçu','Abşeron','Nəsimi'];\nconst zone = zones[doy % zones.length];\n\nreturn [{ json: {\n  pillar: pillar.id,\n  topicHint: pillar.hint,\n  zone,\n  tempC,\n  priceFrom: '3.50',\n  cta: 'GooglePlay & AppStore',\n  dateBaku: baku.toISOString().slice(0,10),\n}}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          272,
+          2832
+        ],
+        "id": "a64c078b-6e8d-4c22-93aa-5efaa88227c5",
+        "name": "Kontent · тема дня"
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=Mövzu: {{ $json.topicHint }}\nZona: {{ $json.zone }}\nHava: {{ $json.tempC ? $json.tempC + '°C' : 'məlum deyil' }}\nQiymət: {{ $json.priceFrom }} manatdan\nCTA: {{ $json.cta }}",
+          "options": {
+            "systemMessage": "Sən Milli Taksi üçün TikTok üçün qısa video ssenariləri yazan azərbaycanlı kontent-müəllifisən.\n\nQAYDALAR (pozma):\n- Yalnız Azərbaycan dilində yaz. Kiril hərfləri qadağandır.\n- Müraciət \"siz\" formasında, hörmətlə.\n- Qısa: 2–4 cümlə, ilk saniyədə güclü hook.\n- Qiymət yalnız \"3.50 manatdan\" kimi göstər. Komissiya haqqında HEÇ NƏ yazma.\n- Endirim, aksiya, promokod TƏKLİF ETMƏ — heç vaxt. Qiymət sabitdir.\n- CTA hər videoda: tətbiqi yüklə (GooglePlay & AppStore).\n- Rəqəmləri yalnız verilən faktlardan götür, uydurma.\n\nCavabı YALNIZ bu JSON kimi ver, başqa heç nə yazma:\n{\"script\":\"...\",\"tiktokCaption\":\"...\",\"tiktokHashtags\":\"#Bakı #taksi #Milli\",\"igCaption\":\"...\",\"shortsTitle\":\"...\"}"
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [
+          528,
+          2832
+        ],
+        "id": "db98c3d7-f4e9-42ae-86eb-cc37f3305745",
+        "name": "Kontent · сценарий"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Парсит ответ модели, проверяет предохранителем, собирает сообщение.\nconst raw = $input.first().json;\nlet text = raw.output || raw.text || raw.response || '';\nif (typeof text === 'object') text = JSON.stringify(text);\n\nlet pkg;\ntry {\n  const m = text.match(/\\{[\\s\\S]*\\}/);\n  pkg = JSON.parse(m ? m[0] : text);\n} catch (e) {\n  return [{ json: { ok:false, msg:'⚠️ Milli-Kontent: модель вернула не-JSON. Перезапусти.' } }];\n}\n\nconst script = (pkg.script || '').trim();\nconst blob = script + ' ' + (pkg.tiktokCaption || '');\nconst cyr = /[а-яё]/i.test(blob);\nconst promo = /(endirim|aksiya|promokod|güzəşt|скид|промо)/i.test(blob);\nconst short = script.length < 15;\nconst long = script.length > 600;\n\nif (cyr || promo || short || long || !script) {\n  const why = cyr?'кириллица' : promo?'промо/скидка' : short?'коротко' : long?'длинно' : 'пусто';\n  return [{ json: { ok:false, msg:'⚠️ Milli-Kontent: пакет отклонён предохранителем ('+why+'). Не отправляю.' } }];\n}\n\nconst b = $('Kontent · тема дня').first().json;\nconst msg =\n`🎬 Контент-пакет · ${b.dateBaku}\nТема: ${b.pillar} · Зона: ${b.zone}${b.tempC?` · ${b.tempC}°`:''}\n\n📝 Озвучка (AZ):\n${script}\n\n🏷 TikTok:\n${pkg.tiktokCaption}\n${pkg.tiktokHashtags}\n\n📸 Instagram: ${pkg.igCaption}\n▶️ Shorts: ${pkg.shortsTitle}\n\n⏰ Лучшее время: 18:00 (вечерний пик)\n👉 Собери в CapCut и пришли готовое видео — поставлю в TikTok+IG+Shorts.`;\n\nreturn [{ json: { ok:true, msg } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          784,
+          2832
+        ],
+        "id": "a47a485b-081a-400e-99ba-8f9831ec8025",
+        "name": "Kontent · сборка"
+      },
+      {
+        "parameters": {
+          "chatId": "8309087590",
+          "text": "={{ $json.msg }}",
+          "additionalFields": {},
+          "options": {
+            "appendAttribution": false
+          }
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1040,
+          2832
+        ],
+        "id": "330a53e0-a3ca-4b2f-a3c9-e6be261b5b37",
+        "name": "Kontent · в telegram",
+        "webhookId": "ec7e6ef5-cb0b-4fc8-8dd0-515e90a7ca0c",
+        "credentials": {
+          "telegramApi": {
+            "id": "qbHB49SQFhw6T0QT",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "triggerAtHour": 7
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          -256,
+          2832
+        ],
+        "id": "cbbdae84-1788-46fb-955d-0b0fee7d0f8c",
+        "name": "Kontent · 7:00"
+      },
+      {
+        "parameters": {
+          "url": "https://api.open-meteo.com/v1/forecast?latitude=40.4093&longitude=49.8671&current=temperature_2m",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          0,
+          2832
+        ],
+        "id": "939f3507-b7da-44ab-a3d3-6fbaa595d54a",
+        "name": "Kontent · погода"
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "claude-sonnet-4-6",
+            "cachedResultName": "Claude Sonnet 4.6"
+          },
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+        "typeVersion": 1.5,
+        "position": [
+          528,
+          2992
+        ],
+        "id": "f59b726e-95ea-4e78-96f4-f9396bb01b41",
+        "name": "Kontent · модель",
+        "credentials": {
+          "anthropicApi": {
+            "id": "8nOF0ya3EctZTilt",
+            "name": "Anthropic account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": false,
+              "leftValue": "",
+              "typeValidation": "loose",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "Куки · это куки?-c1",
+                "leftValue": "={{ $('Милли · триггер TG').item.json.message.text }}",
+                "rightValue": "куки|[a-zA-Z0-9]{16,64}",
+                "operator": {
+                  "type": "string",
+                  "operation": "regex"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "looseTypeValidation": true,
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          0,
+          0
+        ],
+        "id": "f7b94d16-7d50-4f67-a058-cc504a60d123",
+        "name": "Куки · это куки?"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\nconst dir = '/home/node/.n8n/milli';\nconst txt = String($json.message.text || '').trim();\nconst m = txt.match(/([a-z0-9]{16,64})/i);\nconst token = m ? m[1] : '';\n\nif (!/^[a-z0-9]{16,64}$/i.test(token)) {\n  return [{ json: { ok: false, reply: '❌ Не похоже на токен. Пришли: куки <токен>\\nПолучил: ' + token.slice(0, 40), cookie: '' } }];\n}\ntry { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}\nfs.writeFileSync(dir + '/cookie.json', JSON.stringify({ cookie: token, updated: new Date().toISOString() }));\nreturn [{ json: { ok: true, cookie: token, reply: '' } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          272,
+          0
+        ],
+        "id": "f1f1b1e9-9aea-4af9-986a-4856ae25dc9f",
+        "name": "Куки · запись"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://browserless:3000/function?token=milli2026browser",
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/javascript",
+          "body": "=export default async function ({ page }) {\n  const out = { alive: false, note: '' };\n  await page.setCookie({ name: 'cabinetUpTaxi', value: '{{ $json.cookie }}', domain: '1165.upphone.ru', path: '/', httpOnly: false, secure: false });\n  try {\n    await page.goto('https://1165.upphone.ru:4422/web/cab/1165/monitoring/stats', { waitUntil: 'domcontentloaded', timeout: 45000 });\n    await new Promise(r => setTimeout(r, 6000));\n    if (page.url().indexOf('login.uptaxi.ru') !== -1) {\n      out.note = 'редирект на логин';\n      return { data: JSON.stringify(out), type: 'application/json' };\n    }\n    const rows = await page.evaluate(() => {\n      try {\n        const r = window.$('#grid-table').jqxGrid('getrows') || [];\n        if (!r.length) return JSON.stringify({ n: 0 });\n        const L = r[r.length - 1];\n        return JSON.stringify({ n: r.length, na_linii: L.na_linii, gorit: L.gorit, available: L.available });\n      } catch (e) { return JSON.stringify({ n: 0 }); }\n    });\n    const p = JSON.parse(rows);\n    out.alive = p.n > 0;\n    out.na_linii = p.na_linii;\n    out.gorit = p.gorit;\n    out.available = p.available;\n    out.note = p.n > 0 ? 'ок' : 'грид пуст';\n  } catch (e) { out.note = String(e).slice(0, 80); }\n  return { data: JSON.stringify(out), type: 'application/json' };\n}",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            },
+            "timeout": 120000
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          528,
+          0
+        ],
+        "id": "880de6b5-e066-49af-9ed3-1399c1fc635c",
+        "name": "Куки · проверка",
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "const j = $input.first().json;\nlet p = j;\nif (typeof j.data === 'string') { try { p = JSON.parse(j.data); } catch (e) { p = {}; } }\n\nconst prev = $('Куки · запись').first().json;\nif (prev.ok === false) return [{ json: { reply: prev.reply } }];\n\nif (p.alive) {\n  return [{ json: { reply: '✅ Куки принят и жив.\\nНа линии: ' + p.na_linii + ' · Горит: ' + p.gorit + ' · Свободно: ' + p.available + '\\nПульс, Сканер, Вербовщик и Sifariş теперь работают.' } }];\n}\nreturn [{ json: { reply: '❌ Куки записан, но UpTaxi его не принял (' + (p.note || '?') + ').\\nВозьми свежий: login.uptaxi.ru → F12 → Console.' } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          784,
+          0
+        ],
+        "id": "e2d851d7-ef0b-4381-be5b-ae0a66a6ad77",
+        "name": "Куки · вердикт"
+      },
+      {
+        "parameters": {
+          "chatId": "8309087590",
+          "text": "={{ $json.reply }}",
+          "additionalFields": {
+            "appendAttribution": false
+          },
+          "options": {
+            "appendAttribution": false
+          }
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1040,
+          0
+        ],
+        "id": "f9bc5d64-7b27-4f61-bece-aa8dbf7f1669",
+        "name": "Куки · ответ",
+        "webhookId": "d1aef6b3-34cf-4118-b11a-04fc182cf1cf",
+        "credentials": {
+          "telegramApi": {
+            "id": "qbHB49SQFhw6T0QT",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "0 */2 * * *"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          -256,
+          208
+        ],
+        "id": "565d9048-2f81-4665-81c0-341a1eba3da1",
+        "name": "Куки · сторож 2ч"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\nlet cookie = '';\nlet updated = null;\ntry {\n  const j = JSON.parse(fs.readFileSync('/home/node/.n8n/milli/cookie.json', 'utf8'));\n  cookie = j.cookie || '';\n  updated = j.updated || null;\n} catch (e) {}\nconst items = $input.all();\nif (!items.length) return [{ json: { cookie: cookie, cookieUpdated: updated } }];\nreturn items.map(function (i) {\n  const o = Object.assign({}, i.json);\n  o.cookie = cookie;\n  o.cookieUpdated = updated;\n  return { json: o };\n});"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          0,
+          208
+        ],
+        "id": "94a77945-9ea7-4bd4-bf0d-bd64f0f7a423",
+        "name": "Куки · чтение"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://browserless:3000/function?token=milli2026browser",
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/javascript",
+          "body": "=export default async function ({ page }) {\n  const out = { alive: false, note: '' };\n  await page.setCookie({ name: 'cabinetUpTaxi', value: '{{ $json.cookie }}', domain: '1165.upphone.ru', path: '/', httpOnly: false, secure: false });\n  try {\n    await page.goto('https://1165.upphone.ru:4422/web/cab/1165/monitoring/stats', { waitUntil: 'domcontentloaded', timeout: 45000 });\n    await new Promise(r => setTimeout(r, 6000));\n    if (page.url().indexOf('login.uptaxi.ru') !== -1) {\n      out.note = 'редирект на логин';\n      return { data: JSON.stringify(out), type: 'application/json' };\n    }\n    const rows = await page.evaluate(() => {\n      try {\n        const r = window.$('#grid-table').jqxGrid('getrows') || [];\n        if (!r.length) return JSON.stringify({ n: 0 });\n        const L = r[r.length - 1];\n        return JSON.stringify({ n: r.length, na_linii: L.na_linii, gorit: L.gorit, available: L.available });\n      } catch (e) { return JSON.stringify({ n: 0 }); }\n    });\n    const p = JSON.parse(rows);\n    out.alive = p.n > 0;\n    out.na_linii = p.na_linii;\n    out.gorit = p.gorit;\n    out.available = p.available;\n    out.note = p.n > 0 ? 'ок' : 'грид пуст';\n  } catch (e) { out.note = String(e).slice(0, 80); }\n  return { data: JSON.stringify(out), type: 'application/json' };\n}",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            },
+            "timeout": 120000
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          272,
+          208
+        ],
+        "id": "5f844d84-8a49-4f8e-aeb7-658a3edd3bed",
+        "name": "Куки · пинг",
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "const j = $input.first().json;\nlet p = j;\nif (typeof j.data === 'string') { try { p = JSON.parse(j.data); } catch (e) { p = {}; } }\nreturn [{ json: { alive: !!p.alive, note: p.note || '' } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          528,
+          208
+        ],
+        "id": "dc7d439d-a661-4894-85cb-a982d76d869c",
+        "name": "Куки · жив?"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": false,
+              "leftValue": "",
+              "typeValidation": "loose",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "Куки · тревога?-c1",
+                "leftValue": "={{ $json.alive }}",
+                "rightValue": false,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "looseTypeValidation": true,
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          784,
+          208
+        ],
+        "id": "1b37889c-2766-4e26-b689-7486cb87f07c",
+        "name": "Куки · тревога?"
+      },
+      {
+        "parameters": {
+          "chatId": "8309087590",
+          "text": "🔴 Куки UpTaxi умер. Пульс, Сканер, Вербовщик и Sifariş встали.\n\nВозьми свежий:\n1) login.uptaxi.ru → 1165 / MilliBot / Leylusa0618\n2) F12 → Console\n3) document.cookie.split('; ').find(c => c.startsWith('cabinetUpTaxi=')).split('=')[1]\n4) Пришли мне: куки <токен>",
+          "additionalFields": {
+            "appendAttribution": false
+          },
+          "options": {
+            "appendAttribution": false
+          }
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1040,
+          208
+        ],
+        "id": "d2c7c912-6d8e-4aac-a767-845847728d70",
+        "name": "Куки · тревога",
+        "webhookId": "f9a3a1a0-334d-48b6-8630-ce6fef872f91",
+        "credentials": {
+          "telegramApi": {
+            "id": "qbHB49SQFhw6T0QT",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\nlet cookie = '';\nlet updated = null;\ntry {\n  const j = JSON.parse(fs.readFileSync('/home/node/.n8n/milli/cookie.json', 'utf8'));\n  cookie = j.cookie || '';\n  updated = j.updated || null;\n} catch (e) {}\nconst items = $input.all();\nif (!items.length) return [{ json: { cookie: cookie, cookieUpdated: updated } }];\nreturn items.map(function (i) {\n  const o = Object.assign({}, i.json);\n  o.cookie = cookie;\n  o.cookieUpdated = updated;\n  return { json: o };\n});"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          0,
+          512
+        ],
+        "id": "2fdcab67-040c-4b18-9ebf-1a9905aaca2a",
+        "name": "Пульс · куки"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\nlet cookie = '';\nlet updated = null;\ntry {\n  const j = JSON.parse(fs.readFileSync('/home/node/.n8n/milli/cookie.json', 'utf8'));\n  cookie = j.cookie || '';\n  updated = j.updated || null;\n} catch (e) {}\nconst items = $input.all();\nif (!items.length) return [{ json: { cookie: cookie, cookieUpdated: updated } }];\nreturn items.map(function (i) {\n  const o = Object.assign({}, i.json);\n  o.cookie = cookie;\n  o.cookieUpdated = updated;\n  return { json: o };\n});"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          272,
+          800
+        ],
+        "id": "0041bcde-3b75-4dfc-85ba-7382e27daf0d",
+        "name": "Sifariş · куки"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\nlet cookie = '';\nlet updated = null;\ntry {\n  const j = JSON.parse(fs.readFileSync('/home/node/.n8n/milli/cookie.json', 'utf8'));\n  cookie = j.cookie || '';\n  updated = j.updated || null;\n} catch (e) {}\nconst items = $input.all();\nif (!items.length) return [{ json: { cookie: cookie, cookieUpdated: updated } }];\nreturn items.map(function (i) {\n  const o = Object.assign({}, i.json);\n  o.cookie = cookie;\n  o.cookieUpdated = updated;\n  return { json: o };\n});"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          0,
+          1056
+        ],
+        "id": "cdc21db3-99e2-4efa-a794-33946f4f52cc",
+        "name": "Сканер · куки"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\nlet cookie = '';\nlet updated = null;\ntry {\n  const j = JSON.parse(fs.readFileSync('/home/node/.n8n/milli/cookie.json', 'utf8'));\n  cookie = j.cookie || '';\n  updated = j.updated || null;\n} catch (e) {}\nconst items = $input.all();\nif (!items.length) return [{ json: { cookie: cookie, cookieUpdated: updated } }];\nreturn items.map(function (i) {\n  const o = Object.assign({}, i.json);\n  o.cookie = cookie;\n  o.cookieUpdated = updated;\n  return { json: o };\n});"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          272,
+          1312
+        ],
+        "id": "c1e7c07e-dffa-4147-bc32-fa719e328dc8",
+        "name": "Вербовщик · куки"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\nlet cookie = '';\nlet updated = null;\ntry {\n  const j = JSON.parse(fs.readFileSync('/home/node/.n8n/milli/cookie.json', 'utf8'));\n  cookie = j.cookie || '';\n  updated = j.updated || null;\n} catch (e) {}\nconst items = $input.all();\nif (!items.length) return [{ json: { cookie: cookie, cookieUpdated: updated } }];\nreturn items.map(function (i) {\n  const o = Object.assign({}, i.json);\n  o.cookie = cookie;\n  o.cookieUpdated = updated;\n  return { json: o };\n});"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          0,
+          3104
+        ],
+        "id": "b628fb73-c759-42dc-aced-0e286a8fc266",
+        "name": "Разведчик · куки"
+      },
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          -256,
+          3104
+        ],
+        "id": "873b579c-990e-492c-9433-d478c8565ea8",
+        "name": "Разведчик · запуск вручную"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://browserless:3000/function?token=milli2026browser",
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/javascript",
+          "body": "=export default async function ({ page }) {\n  const out = { url: '', note: 'песочница — меняй код под задачу' };\n  await page.setCookie({ name: 'cabinetUpTaxi', value: '{{ $json.cookie }}', domain: '1165.upphone.ru', path: '/', httpOnly: false, secure: false });\n  await page.goto('https://1165.upphone.ru:4422/web/cab/1165/monitoring/stats', { waitUntil: 'domcontentloaded', timeout: 45000 });\n  await new Promise(r => setTimeout(r, 6000));\n  out.url = page.url();\n  out.alive = out.url.indexOf('login.uptaxi.ru') === -1;\n  return { data: JSON.stringify(out), type: 'application/json' };\n}",
+          "options": {
+            "timeout": 300000
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          272,
+          3104
+        ],
+        "id": "7a46a5ea-eee2-4f51-b30e-9fd3c5dc7e1e",
+        "name": "Разведчик · песочница"
+      },
+      {
+        "parameters": {
+          "url": "https://api.open-meteo.com/v1/forecast?latitude=40.4093&longitude=49.8671&current=temperature_2m,weather_code&daily=temperature_2m_max&forecast_days=1&timezone=Asia%2FBaku",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          0,
+          2304
+        ],
+        "id": "9774a0e3-a554-437b-8b66-afb39d4311c6",
+        "name": "Пуш обед · погода"
+      },
+      {
+        "parameters": {
+          "chatId": "8309087590",
+          "text": "=🔵 ПУЛЬС ({{ $json.wrote ? $json.wrote.hour : '—' }}, {{ $json.ageMin!=null ? $json.ageMin+' мин назад' : '' }})\n{{ $json.ok===false ? '⚠ '+$json.note : '' }}На линии: {{ $json.wrote ? $json.wrote.na_linii : '—' }}\nГорит: {{ $json.wrote ? $json.wrote.gorit : '—' }}\nСвободно: {{ $json.wrote ? $json.wrote.available : '—' }}\n\nДоска: всего {{ $json.wrote ? $json.wrote.board_total : '—' }}, горит {{ $json.wrote ? $json.wrote.board_burning : '—' }}, без водителя {{ $json.wrote ? $json.wrote.board_burning_free : '—' }}",
+          "additionalFields": {},
+          "options": {
+            "appendAttribution": false
+          }
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          -600,
+          -1500
+        ],
+        "id": "a1b2c3d4-0002-4000-8000-00000000pulr",
+        "name": "Пульс · ответ TG",
+        "credentials": {
+          "telegramApi": {
+            "id": "qbHB49SQFhw6T0QT",
+            "name": "Telegram account"
+          }
+        },
+        "webhookId": "a766a3c3-d382-4659-bb51-5ffb9213f6b5"
+      },
+      {
+        "parameters": {
+          "updates": [
+            "message"
+          ],
+          "additionalFields": {
+            "filters": {
+              "filters": [
+                {
+                  "column": "text",
+                  "operatorType": "contains",
+                  "value1": "куки"
+                },
+                {
+                  "column": "text",
+                  "operatorType": "contains",
+                  "value1": "пульс"
+                },
+                {
+                  "column": "text",
+                  "operatorType": "contains",
+                  "value1": "ok"
+                }
+              ]
+            }
+          }
+        },
+        "type": "n8n-nodes-base.telegramTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          -2160,
+          -1600
+        ],
+        "id": "b2c3d4e5-0001-4000-8000-00000000pult",
+        "name": "Милли · триггер TG",
+        "credentials": {
+          "telegramApi": {
+            "id": "qbHB49SQFhw6T0QT",
+            "name": "Telegram account"
+          }
+        },
+        "webhookId": "6968f9a1-e1b8-4dc7-9db6-996f1cbb4c4d"
+      },
+      {
+        "parameters": {
+          "mode": "rules",
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": false,
+                    "typeValidation": "loose",
+                    "version": 2
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "id": "s-kuki",
+                      "leftValue": "={{ $json.message.text.toLowerCase() }}",
+                      "rightValue": "куки",
+                      "operator": {
+                        "type": "string",
+                        "operation": "contains"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "куки"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": false,
+                    "typeValidation": "loose",
+                    "version": 2
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "id": "s-puls",
+                      "leftValue": "={{ $json.message.text.toLowerCase() }}",
+                      "rightValue": "пульс",
+                      "operator": {
+                        "type": "string",
+                        "operation": "contains"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "пульс"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": false,
+                    "typeValidation": "loose",
+                    "version": 2
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "id": "s-inv",
+                      "leftValue": "={{ $json.message.text.toLowerCase() }}",
+                      "rightValue": "инвентар",
+                      "operator": {
+                        "type": "string",
+                        "operation": "contains"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "инвентарь"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": false,
+                    "typeValidation": "loose",
+                    "version": 2
+                  },
+                  "combinator": "and",
+                  "conditions": [
+                    {
+                      "id": "s-ok",
+                      "leftValue": "={{ $json.message.text.toLowerCase() }}",
+                      "rightValue": "ok",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "ok"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3,
+        "position": [
+          -1700,
+          -200
+        ],
+        "id": "c3d4e5f6-0001-4000-8000-00000000rout",
+        "name": "Милли · роутер"
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "triggerAtHour": 3
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          -2200,
+          600
+        ],
+        "id": "d4e5f6a7-0001-4000-8000-00000000arch",
+        "name": "Архив · 03:00"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\nconst dir = '/home/node/.n8n/milli';\nconst stamp = new Date().toISOString().slice(0,10);\nconst out = { ts: new Date().toISOString(), files: {} };\nconst files = ['cookie.json','pulse.json','driver_positions.json','sifaris_sent_orders.json','pending_push.txt'];\nfor (const f of files) {\n  try { out.files[f] = fs.readFileSync(dir+'/'+f,'utf8').slice(0,5000); } catch(e){ out.files[f] = 'MISSING'; }\n}\nconst snap = JSON.stringify(out, null, 2);\nfs.writeFileSync(dir+'/archive_'+stamp+'.json', snap, 'utf8');\nreturn [{ json: { ok: true, wrote: 'archive_'+stamp+'.json', size: snap.length } }];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2.1,
+        "position": [
+          -1950,
+          600
+        ],
+        "id": "d4e5f6a7-0002-4000-8000-00000000archc",
+        "name": "Архив · снимок"
+      },
+      {
+        "parameters": {
+          "chatId": "8309087590",
+          "text": "=🗄 Резервная копия офиса сохранена: {{ $json.wrote }} ({{ $json.size }} байт).",
+          "additionalFields": {},
+          "options": {
+            "appendAttribution": false
+          }
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          -1700,
+          600
+        ],
+        "id": "d4e5f6a7-0003-4000-8000-00000000archt",
+        "name": "Архив · мне",
+        "credentials": {
+          "telegramApi": {
+            "id": "qbHB49SQFhw6T0QT",
+            "name": "Telegram account"
+          }
+        },
+        "webhookId": "580b848b-070e-431c-b0b8-c2703bec2034"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs = require('fs');\nconst dir='/home/node/.n8n/milli';\nlet draft='';\ntry { draft = fs.readFileSync(dir+'/pending_push.txt','utf8'); } catch(e){ draft='(нет черновика)'; }\nreturn [{ json: { confirmed: true, draft } }];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2.1,
+        "position": [
+          -1450,
+          200
+        ],
+        "id": "e5f6a7b8-0001-4000-8000-00000000okcd",
+        "name": "Пуш · ок-рассылка"
+      },
+      {
+        "parameters": {
+          "chatId": "8309087590",
+          "text": "=✅ Ok получен. Черновик готов к рассылке водителям:\n{{ $json.draft }}",
+          "additionalFields": {},
+          "options": {
+            "appendAttribution": false
+          }
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          -1200,
+          200
+        ],
+        "id": "e5f6a7b8-0002-4000-8000-00000000oktg",
+        "name": "Пуш · ок-мне",
+        "credentials": {
+          "telegramApi": {
+            "id": "qbHB49SQFhw6T0QT",
+            "name": "Telegram account"
+          }
+        },
+        "webhookId": "4c9b8b02-9419-488e-aea2-992b308a9a1f"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs=require('fs');\nlet arr=[]; try{ arr=JSON.parse(fs.readFileSync('/home/node/.n8n/milli/pulse.json','utf8')); }catch(e){}\nif(!Array.isArray(arr)||!arr.length){ return [{json:{wrote:null,ok:false,note:'нет данных пульса пока (сбор идёт каждые 10 мин)'}}]; }\nconst last=arr[arr.length-1];\nreturn [{json:{wrote:last, ok:true, ageMin: Math.round((Date.now()-new Date(last.ts).getTime())/60000)}}];"
+        },
+        "id": "02d654f6-cea7-426a-8c62-29ffe4cf1370",
+        "name": "Пульс · читать",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          0,
+          692
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs=require('fs');let c='';try{const j=JSON.parse(fs.readFileSync('/home/node/.n8n/milli/cookie.json','utf8'));c=j.cookie||'';}catch(e){}return [{json:{cookie:c}}];"
+        },
+        "id": "50a50548-1b13-43ed-9e8e-a8dbadc4052d",
+        "name": "Тариф · куки",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -400,
+          2400
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://browserless:3000/function?token=milli2026browser",
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/javascript",
+          "body": "=export default async function ({ page }) {\n  const out={ts:new Date().toISOString(),error:null};\n  const xhr=[];\n  page.on('response', async (resp)=>{ try{ const u=resp.url();\n    if(/tarif|tariff|directory/i.test(u) && !/\\.(js|css|png|jpg|woff|svg)/i.test(u)){\n      let b=''; try{b=(await resp.text());}catch(e){}\n      xhr.push({url:u.slice(0,200),len:b.length,sample:b.slice(0,3000)});\n    }}catch(e){} });\n  await page.setCookie({name:'cabinetUpTaxi',value:'{{ $json.cookie }}',domain:'1165.upphone.ru',path:'/',httpOnly:false,secure:false});\n  await page.goto('https://1165.upphone.ru:4422/web/cab/1165/directory/tariffs',{waitUntil:'networkidle2',timeout:45000});\n  await new Promise(r=>setTimeout(r,8000));\n  if(page.url().indexOf('login')!==-1){return {data:JSON.stringify({error:'COOKIE_DEAD'}),type:'application/json'};}\n  const grid=await page.evaluate(()=>{\n    const o={rows:[],gridFound:false};\n    // try jqxGrid first\n    try{ if(window.$ && window.$('#grid-table').length){ const rows=window.$('#grid-table').jqxGrid('getrows')||[]; o.gridFound=true; o.rows=rows.map(function(r){return r;}); return o; } }catch(e){}\n    // try webix\n    try{ if(window.$$){ for(const id in webix.ui.views){} } }catch(e){}\n    // fallback: scrape any table/grid rows text\n    const txt=[];\n    document.querySelectorAll('.jqx-grid-cell, [role=\"row\"], tr').forEach(function(el){ const t=(el.textContent||'').trim().replace(/\\s+/g,' '); if(t&&t.length<200) txt.push(t); });\n    o.textRows=Array.from(new Set(txt)).slice(0,120);\n    return o;\n  });\n  out.grid=grid; out.xhr=xhr.slice(0,10);\n  return {data:JSON.stringify(out),type:'application/json'};\n}",
+          "options": {
+            "timeout": 170000
+          }
+        },
+        "id": "ad24b109-9597-4b0d-9ea3-fdd02e5c8dcc",
+        "name": "Тариф · сбор",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -180,
+          2400
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const fs=require('fs');\nlet p={};try{p=typeof $json.data==='string'?JSON.parse($json.data):($json.data||$json);}catch(e){p=$json;}\nconst dir='/home/node/.n8n/milli';try{fs.mkdirSync(dir,{recursive:true});}catch(e){}\nconst path=dir+'/tariffs_'+Date.now()+'.json';\ntry{fs.writeFileSync(path,JSON.stringify(p,null,2));}catch(e){}\nconst g=p.grid||{};\nreturn [{json:{gridFound:g.gridFound,rowCount:(g.rows||[]).length,textRowCount:(g.textRows||[]).length,\n  xhrCount:(p.xhr||[]).length,path:path,error:p.error||null,\n  rowsSample:JSON.stringify((g.rows||[]).slice(0,3)).slice(0,1500),\n  textSample:(g.textRows||[]).slice(0,40).join(' | ').slice(0,1500),\n  xhrUrls:(p.xhr||[]).map(function(x){return x.url+' ('+x.len+')';}).join('\\n')}}];"
+        },
+        "id": "bf475c4c-f3e8-4397-839d-484e17e04260",
+        "name": "Тариф · запись",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          60,
+          2400
+        ]
+      }
+    ],
+    "connections": {
+      "Пуш утро · 7:00": {
+        "main": [
+          [
+            {
+              "node": "Пуш утро · погода",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пуш утро · погода": {
+        "main": [
+          [
+            {
+              "node": "Пуш утро · шаблон",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пуш утро · черновик": {
+        "main": [
+          [
+            {
+              "node": "Пуш утро · мне",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Мозг · рассылка всем": {
+        "main": [
+          [
+            {
+              "node": "Мозг · очистить черновик",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Мозг · очистить черновик": {
+        "main": [
+          [
+            {
+              "node": "Мозг · готово",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пуш обед · 13:00": {
+        "main": [
+          [
+            {
+              "node": "Пуш обед · погода",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пуш обед · черновик": {
+        "main": [
+          [
+            {
+              "node": "Пуш обед · мне",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Мозг · очистка текста": {
+        "main": [
+          [
+            {
+              "node": "Мозг · рассылка всем",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пуш вечер · 17:00": {
+        "main": [
+          [
+            {
+              "node": "Пуш вечер · шаблон",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пуш вечер · черновик": {
+        "main": [
+          [
+            {
+              "node": "Пуш вечер · мне",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пуш вечер · шаблон": {
+        "main": [
+          [
+            {
+              "node": "Пуш вечер · черновик",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пуш обед · шаблон": {
+        "main": [
+          [
+            {
+              "node": "Пуш обед · черновик",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пуш утро · шаблон": {
+        "main": [
+          [
+            {
+              "node": "Пуш утро · черновик",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Вербовщик · 3 мин": {
+        "main": [
+          [
+            {
+              "node": "Вербовщик · позиции",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sifariş · 3 мин 8-20": {
+        "main": [
+          [
+            {
+              "node": "Sifariş · память",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sifariş · пуш": {
+        "main": [
+          [
+            {
+              "node": "Sifariş · отметка",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Сканер · сбор": {
+        "main": [
+          [
+            {
+              "node": "Сканер · запись",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пульс · снять": {
+        "main": [
+          [
+            {
+              "node": "Пульс · запись",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Kontent · тема дня": {
+        "main": [
+          [
+            {
+              "node": "Kontent · сценарий",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Kontent · сценарий": {
+        "main": [
+          [
+            {
+              "node": "Kontent · сборка",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Kontent · сборка": {
+        "main": [
+          [
+            {
+              "node": "Kontent · в telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Kontent · 7:00": {
+        "main": [
+          [
+            {
+              "node": "Kontent · погода",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Kontent · погода": {
+        "main": [
+          [
+            {
+              "node": "Kontent · тема дня",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Kontent · модель": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Kontent · сценарий",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Куки · это куки?": {
+        "main": [
+          [
+            {
+              "node": "Куки · запись",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Пуш · ок-рассылка",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Куки · запись": {
+        "main": [
+          [
+            {
+              "node": "Куки · проверка",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Куки · проверка": {
+        "main": [
+          [
+            {
+              "node": "Куки · вердикт",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Куки · вердикт": {
+        "main": [
+          [
+            {
+              "node": "Куки · ответ",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Куки · сторож 2ч": {
+        "main": [
+          [
+            {
+              "node": "Куки · чтение",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Куки · чтение": {
+        "main": [
+          [
+            {
+              "node": "Куки · пинг",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Куки · пинг": {
+        "main": [
+          [
+            {
+              "node": "Куки · жив?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Куки · жив?": {
+        "main": [
+          [
+            {
+              "node": "Куки · тревога?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Куки · тревога?": {
+        "main": [
+          [
+            {
+              "node": "Куки · тревога",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пульс · 10 мин": {
+        "main": [
+          [
+            {
+              "node": "Пульс · куки",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пульс · куки": {
+        "main": [
+          [
+            {
+              "node": "Пульс · снять",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Сканер · 5 мин": {
+        "main": [
+          [
+            {
+              "node": "Сканер · куки",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Сканер · куки": {
+        "main": [
+          [
+            {
+              "node": "Сканер · сбор",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sifariş · память": {
+        "main": [
+          [
+            {
+              "node": "Sifariş · куки",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sifariş · куки": {
+        "main": [
+          [
+            {
+              "node": "Sifariş · пуш",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Вербовщик · позиции": {
+        "main": [
+          [
+            {
+              "node": "Вербовщик · куки",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Вербовщик · куки": {
+        "main": [
+          [
+            {
+              "node": "Вербовщик · отправка (ТЕСТ id5)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Разведчик · запуск вручную": {
+        "main": [
+          [
+            {
+              "node": "Разведчик · куки",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Разведчик · куки": {
+        "main": [
+          [
+            {
+              "node": "Разведчик · песочница",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пуш обед · погода": {
+        "main": [
+          [
+            {
+              "node": "Пуш обед · шаблон",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пульс · запись": {
+        "main": [
+          []
+        ]
+      },
+      "Милли · триггер TG": {
+        "main": [
+          [
+            {
+              "node": "Милли · роутер",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Милли · роутер": {
+        "main": [
+          [
+            {
+              "node": "Куки · запись",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Пульс · читать",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [],
+          [
+            {
+              "node": "Пуш · ок-рассылка",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Архив · 03:00": {
+        "main": [
+          [
+            {
+              "node": "Архив · снимок",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Архив · снимок": {
+        "main": [
+          [
+            {
+              "node": "Архив · мне",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пуш · ок-рассылка": {
+        "main": [
+          [
+            {
+              "node": "Пуш · ок-мне",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Пульс · читать": {
+        "main": [
+          [
+            {
+              "node": "Пульс · ответ TG",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Тариф · куки": {
+        "main": [
+          [
+            {
+              "node": "Тариф · сбор",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Тариф · сбор": {
+        "main": [
+          [
+            {
+              "node": "Тариф · запись",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Huseyn Khalilzade",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-07-19T07:51:09.311Z",
+        "id": 171,
+        "workflowId": "YKDeJegcr2Nwbulq",
+        "versionId": "6e433a1e-f1c6-412f-9f87-2ddb1e5e1ed9",
+        "event": "activated",
+        "userId": "c027c081-ca99-4561-86b8-9a2559f04724"
+      },
+      {
+        "createdAt": "2026-07-19T07:51:28.152Z",
+        "id": 173,
+        "workflowId": "YKDeJegcr2Nwbulq",
+        "versionId": "6e433a1e-f1c6-412f-9f87-2ddb1e5e1ed9",
+        "event": "activated",
+        "userId": "c027c081-ca99-4561-86b8-9a2559f04724"
+      },
+      {
+        "createdAt": "2026-07-19T07:51:09.207Z",
+        "id": 170,
+        "workflowId": "YKDeJegcr2Nwbulq",
+        "versionId": "6e433a1e-f1c6-412f-9f87-2ddb1e5e1ed9",
+        "event": "deactivated",
+        "userId": "c027c081-ca99-4561-86b8-9a2559f04724"
+      },
+      {
+        "createdAt": "2026-07-19T07:51:28.052Z",
+        "id": 172,
+        "workflowId": "YKDeJegcr2Nwbulq",
+        "versionId": "6e433a1e-f1c6-412f-9f87-2ddb1e5e1ed9",
+        "event": "deactivated",
+        "userId": "c027c081-ca99-4561-86b8-9a2559f04724"
+      }
+    ]
+  }
+}

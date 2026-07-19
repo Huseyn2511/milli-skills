@@ -1,0 +1,7 @@
+# never commit secrets
+*.env
+.env*
+**/.env
+# hermes internals
+state.db*
+logs/
