@@ -1,9 +1,9 @@
-Milli Taksi (Баку/Сумгаит, агрегатор такси), владелец Гусейн (Xəlilov Hüseyn, из Москвы). Офис на n8n; контекст — skill milli-taksi (грузить каждую сессию). Автономия: делать самому через API, не гонять владельца «напиши боту X»; коды присылать ЦЕЛИКОМ copy-paste. Неизменные красные линии: цена до заказа окончательна, тон Siz, водителям ТОЛЬКО азербайджанский. Цель тарифа: Milli на 10% дешевле Яндекса.
+Milli Taksi (Баку/Сумгаит). Владелец Гусейн (десктоп-Hermes осн., ТГ запасной). Агентов по одному. Цена до заказа окончательна, тон Siz, водителям только азерб. Тариф Milli на 10% дешевле Яндекса. Красные линии: 2.50 только Баку, iPhone только водителям, бел/бордо только Taksi.
 §
-КРАСНЫЕ ЛИНИИ (ред. 18.07): многое 'ПОКА' временно. 2.50 только Баку (Сумгаит без минималки); iPhone нет только у водителей; цвет бел/бордо — только тариф Taksi. Полная редакция в skill milli-taksi.
+OpenRouter deepseek/deepseek-v4-flash
 §
-ИНФРА: сервер Timeweb = та же машина что n8n (8544767-wx953703.twc1.net), root по ключу ed25519. RAM 1.9ГБ (апгрейд до 4-8ГБ желателен). Nous ИЗ РФ заблокирован→Hermes на сервере через OpenRouter (model tencent/hy3:free; llama-3.1-8b-instruct:free убран 404). Hermes v0.18.2 gateway СТОИТ и АКТИВЕН (systemd hermes-gateway, автозапуск; /sethome→chat 8309087590). .env /root/.hermes/.env. Бот MilliHermesai_bot валиден. n8n https://8544767-wx953703.twc1.net; browserless token milli2026browser; @milli_office_bot Chat 8309087590.
+Память: ПК push → github Huseyn2511/milli-skills memory-sync/ (ghp_DH5h...). Сервер pull каждые 5мин cron; рестарт gateway при изменении.
 §
-Владелец Milli (Гусейн): десктоп-Hermes = ОСНОВНОЙ канал; ТГ-бот @MilliHermesai_bot = только когда не за ПК. Агентов в n8n создавать ПООДИНОЧКЕ по команде, НЕ пачками. Синхронизация памяти ПК↔сервер через GitHub — сказал «обязательно». Хочет ЧЁТКО понимать персистентность контекста: факты помню везде через память, живой диалог — в рамках одного канала. Миграция агента на сервер Timeweb ВЫПОЛНЕНА.
+Daily Orders файл: /home/node/.n8n/milli/daily_orders.json на сервере Timeweb. Читать: docker exec n8n-n8n-1 cat /home/node/.n8n/milli/daily_orders.json. Формат: {дата: {total, statuses, lastUpdate}}. Из любого канала читаю через paramiko.
 §
-§ СИНХРОН ПАМЯТИ ПК↔сервер (ОБЯЗАТЕЛЬНО по воле владельца): ПК push MEMORY.md/USER.md → github Huseyn2511/milli-skills memory-sync/ (скрипт milli-skills/memory-sync/sync_push.sh, env MILLI_GH_PAT). Сервер pull каждые 5мин (/root/sync_memory_pull.sh + crontab) → рестарт hermes-gateway при изменении; MILLI_GH_PAT в /root/.hermes/.env. § Yango на телефоне (РФ): автодополнение гео-смещено на РФ → писать Baku-специфичные запросы (иначе московские аэропорты).
+Сервер модель: deepseek/deepseek-v4-flash через OpenRouter (обновлено 21.07). TG-бот @MilliHermesai_bot. Для проверки n8n нужно добавить N8N_API_KEY в .env на сервере — ключ leyla. Контекст с TG: синхронизация памяти разорвана, нужен push в GitHub.
